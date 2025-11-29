@@ -28,8 +28,9 @@
             background: white;
             border-radius: 12px;
             box-shadow: 0 2px 12px rgba(0,0,0,0.08);
-            display: none; /* 默认隐藏，验证通过后显示 */
+            display: none; /* 默认隐藏，密码验证通过后显示 */
         }
+        /* 密码锁定页面样式 */
         .lock-screen {
             max-width: 500px;
             width: 100%;
@@ -39,14 +40,27 @@
             box-shadow: 0 2px 12px rgba(0,0,0,0.08);
         }
         .lock-title {
-            color: #ff7043;
+            color: #2196F3;
             font-size: 24px;
             margin-bottom: 20px;
         }
+        #accessPassword {
+            padding: 12px 15px;
+            width: 240px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+            margin-bottom: 15px;
+            outline: none;
+            transition: border 0.2s;
+        }
+        #accessPassword:focus {
+            border-color: #2196F3;
+        }
         .lock-desc {
             color: #666;
-            font-size: 16px;
-            margin-bottom: 30px;
+            font-size: 14px;
+            margin-top: 15px;
         }
         h1 {
             color: #2196F3;
@@ -203,13 +217,16 @@
     </style>
 </head>
 <body>
-    <!-- 锁定页面（默认显示） -->
+    <!-- 密码锁定页面（默认显示） -->
     <div class="lock-screen" id="lockScreen">
-        <h2 class="lock-title">访问受限</h2>
-        <p class="lock-desc">请使用专属NFC贴纸访问此页面，手动输入网址无效</p>
+        <h2 class="lock-title">请输入访问密码</h2>
+        <input type="password" id="accessPassword" placeholder="输入密码解锁专属页面" autocomplete="off">
+        <br>
+        <button onclick="verifyPassword()" class="btn">确认访问</button>
+        <p class="lock-desc">每次进入都需验证密码，保障隐私安全</p>
     </div>
 
-    <!-- 主内容（验证通过后显示） -->
+    <!-- 主内容（密码验证通过后显示） -->
     <div class="container" id="mainContent">
         <h1>欢迎你的到来！</h1>
 
@@ -268,41 +285,49 @@
     </div>
 
     <script>
-        // 核心配置：NFC专属秘密参数（可修改为任意字符串，如复杂随机数）
-        const NFC_SECRET_KEY = "25014105";
+        // 核心配置：访问密码（固定为25014105）
+        const ACCESS_PASSWORD = "25014105";
         let timerInterval;
-        const SPECIAL_DATE = new Date(2007, 7, 8);
-        const DEFAULT_START_DATE = new Date();
-        let clickCount = 0;
-        let resetClickCount = 0;
+        const SPECIAL_DATE = new Date(2007, 7, 8); // 2007-08-08（特殊日期）
+        const DEFAULT_START_DATE = new Date(); // 默认计时起点：当前时间
+        let clickCount = 0; // 日记清空触发计数
+        let resetClickCount = 0; // 重置按钮触发计数
         let musicPlayed = false;
         const audio = document.getElementById('musicPlayer');
         const musicTip = document.getElementById('musicTip');
         const hiddenResetBtn = document.getElementById('hiddenResetBtn');
         const pageOpenTime = new Date();
 
-        // 第一步：验证URL参数（仅NFC贴纸打开会带参数）
-        function verifyNFCParam() {
-            // 解析URL中的参数（如 ?nfc=25014105）
-            const urlParams = new URLSearchParams(window.location.search);
-            const inputKey = urlParams.get('nfc');
-            // 验证参数是否正确
-            if (inputKey === NFC_SECRET_KEY) {
-                // 验证通过：隐藏锁定页面，显示主内容
+        // 页面加载时直接显示密码框（取消7天免验证）
+        window.addEventListener('load', () => {
+            document.getElementById('lockScreen').style.display = 'block';
+            document.getElementById('mainContent').style.display = 'none';
+            // 清除可能残留的验证状态（防止缓存）
+            localStorage.removeItem('accessVerified');
+            localStorage.removeItem('verifyExpire');
+        });
+
+        // 密码验证逻辑（仅本次会话有效，刷新/关闭后需重新验证）
+        function verifyPassword() {
+            const inputPwd = document.getElementById('accessPassword').value.trim();
+            
+            if (inputPwd === ACCESS_PASSWORD) {
+                // 验证通过：显示主内容并初始化功能（不存储验证状态）
                 document.getElementById('lockScreen').style.display = 'none';
                 document.getElementById('mainContent').style.display = 'block';
-                // 初始化功能
                 initAllFunctions();
+                // 清空密码输入框，提升安全性
+                document.getElementById('accessPassword').value = '';
             } else {
-                // 验证失败：保持锁定页面
-                document.getElementById('lockScreen').style.display = 'block';
-                document.getElementById('mainContent').style.display = 'none';
+                // 密码错误：提示并清空输入框
+                alert('密码错误！请重新输入');
+                document.getElementById('accessPassword').value = '';
             }
         }
 
-        // 初始化所有功能（验证通过后执行）
+        // 初始化所有核心功能（密码验证通过后执行）
         function initAllFunctions() {
-            // 音乐播放初始化
+            // 1. 音乐播放初始化
             audio.play().then(handleMusicPlaySuccess).catch(() => {
                 musicTip.textContent = '点击/滑动页面即可播放音乐';
                 const handlePlayTrigger = () => {
@@ -320,9 +345,10 @@
                 musicTip.textContent = '音乐加载失败，请检查文件';
             });
 
-            // 计时功能初始化
+            // 2. 计时功能初始化（带记忆）
             initTimer();
-            // 日记功能初始化
+
+            // 3. 日记功能初始化（带记忆）
             renderDiaries();
         }
 
@@ -335,24 +361,30 @@
             }, 3000);
         }
 
-        // 计时功能核心（带记忆）
+        // 计时功能核心（带记忆+隐藏重置+日期限制）
         function initTimer() {
             const savedStart = localStorage.getItem('timerStart');
             let startDate;
+
+            // 优先读取本地存储的计时起点（上次关闭时的状态）
             if (savedStart) {
                 startDate = new Date(savedStart);
+                // 验证日期合法性（防止篡改）
                 if (isNaN(startDate.getTime()) || !(startDate.getTime() === SPECIAL_DATE.getTime() || startDate <= new Date())) {
                     startDate = new Date();
                     localStorage.setItem('timerStart', startDate.toISOString());
                 }
             } else {
+                // 无存储记录时，使用当前时间作为初始起点并保存
                 startDate = new Date();
                 localStorage.setItem('timerStart', startDate.toISOString());
             }
+
             updateTimerDisplay(startDate);
             startTimerInterval();
         }
 
+        // 从现在开始计时（更新并保存新起点）
         function startTimerNow() {
             const now = new Date();
             localStorage.setItem('timerStart', now.toISOString());
@@ -360,27 +392,36 @@
             restartTimerInterval();
         }
 
+        // 选择日期开始计时（限制：2007-08-08或当前时间之前）
         function selectStartDate() {
             const maxDate = new Date().toISOString().split('T')[0];
             const defaultDate = new Date().toISOString().split('T')[0];
             const dateStr = prompt(`请输入开始日期（格式：YYYY-MM-DD）\n允许范围：2007-08-08 至 ${maxDate}`, defaultDate);
+            
             if (!dateStr) return;
+            
             const selectedDate = new Date(dateStr);
             const selectedDateStr = selectedDate.toISOString().split('T')[0];
             const specialDateStr = SPECIAL_DATE.toISOString().split('T')[0];
+
+            // 验证日期格式
             if (isNaN(selectedDate.getTime())) {
                 alert('日期格式错误！请输入类似 2024-01-01 的格式');
                 return;
             }
+
+            // 验证日期范围
             if (selectedDateStr !== specialDateStr && selectedDate > new Date()) {
                 alert(`只能选择 ${specialDateStr} 或 ${maxDate} 之前的日期哦！`);
                 return;
             }
+
             localStorage.setItem('timerStart', selectedDate.toISOString());
             updateTimerDisplay(selectedDate);
             restartTimerInterval();
         }
 
+        // 重置计时到初始状态（当前时间）
         function resetTimerToInitialState() {
             const initialDate = new Date();
             localStorage.setItem('timerStart', initialDate.toISOString());
@@ -391,6 +432,7 @@
             alert('已重置为初始计时状态（当前时间）！');
         }
 
+        // 点击计时标题5次显示重置按钮
         function triggerHiddenReset() {
             resetClickCount++;
             const titleEl = document.querySelector('.timer-title');
@@ -398,19 +440,24 @@
             setTimeout(() => {
                 titleEl.style.color = resetClickCount >= 5 ? '#333' : '#333';
             }, 300);
+
             if (resetClickCount >= 5) {
                 hiddenResetBtn.style.display = 'inline-block';
                 resetClickCount = 0;
             }
         }
 
+        // 滑轮式计时显示更新
         function updateTimerDisplay(startDate) {
             const now = new Date();
             const timeDiff = Math.max(0, now - startDate);
+
             const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
             const hours = Math.floor((timeDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
             const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
             const seconds = Math.floor((timeDiff % (1000 * 60)) / 1000);
+
+            // 数字补零显示
             const formatNum = num => num.toString().padStart(2, '0');
             document.getElementById('daysNum').textContent = formatNum(days);
             document.getElementById('hoursNum').textContent = formatNum(hours);
@@ -418,11 +465,14 @@
             document.getElementById('secondsNum').textContent = formatNum(seconds);
         }
 
+        // 计时定时器（每秒更新）
         function startTimerInterval() {
             if (timerInterval) clearInterval(timerInterval);
             timerInterval = setInterval(() => {
                 const savedStart = localStorage.getItem('timerStart');
-                if (savedStart) updateTimerDisplay(new Date(savedStart));
+                if (savedStart) {
+                    updateTimerDisplay(new Date(savedStart));
+                }
             }, 1000);
         }
 
@@ -431,17 +481,24 @@
             startTimerInterval();
         }
 
-        // 日记功能
+        // 日记功能（带本地存储记忆）
         function saveDiary() {
             const content = document.getElementById('diaryContent').value.trim();
             if (!content) {
                 alert('日记内容不能为空哦！');
                 return;
             }
-            const diary = { id: Date.now(), date: new Date().toLocaleDateString(), content: content };
+
+            const diary = {
+                id: Date.now(),
+                date: new Date().toLocaleDateString(),
+                content: content
+            };
+
             const diaries = JSON.parse(localStorage.getItem('diaries') || '[]');
             diaries.push(diary);
             localStorage.setItem('diaries', JSON.stringify(diaries));
+
             document.getElementById('diaryContent').value = '';
             renderDiaries();
         }
@@ -449,19 +506,26 @@
         function renderDiaries() {
             const list = document.getElementById('diaryList');
             const diaries = JSON.parse(localStorage.getItem('diaries') || '[]');
-            diaries.sort((a, b) => b.id - a.id);
+            diaries.sort((a, b) => b.id - a.id); // 按时间倒序排列
+
             let html = '';
             diaries.forEach(item => {
-                html += `<div class="diary-item"><strong>${item.date}</strong>：${escapeHtml(item.content)}</div>`;
+                html += `
+                    <div class="diary-item">
+                        <strong>${item.date}</strong>：${escapeHtml(item.content)}
+                    </div>
+                `;
             });
+
             list.innerHTML = html || '<div style="text-align: center; color: #999; padding: 10px;">暂无日记记录</div>';
         }
 
+        // 防止XSS攻击：转义HTML特殊字符
         function escapeHtml(str) {
             return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
         }
 
-        // 日记清空功能
+        // 日记清空功能（密码：25014105）
         function triggerClearEntry() {
             clickCount++;
             const triggerEl = document.querySelector('.clear-trigger');
@@ -469,6 +533,7 @@
             setTimeout(() => {
                 triggerEl.style.color = clickCount >= 5 ? '#666' : '#999';
             }, 300);
+
             if (clickCount >= 5) {
                 document.getElementById('clearCode').style.display = 'inline-block';
                 document.querySelector('.btn-special[onclick="checkClearCode()"]').style.display = 'inline-block';
@@ -496,10 +561,7 @@
             }
         }
 
-        // 页面加载时立即验证参数
-        window.addEventListener('load', verifyNFCParam);
-
-        // 页面卸载清除定时器
+        // 页面卸载时清除定时器（优化性能）
         window.addEventListener('unload', () => {
             if (timerInterval) clearInterval(timerInterval);
         });
