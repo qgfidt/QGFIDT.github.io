@@ -1,43 +1,508 @@
-<!-- 密码锁定页面（默认显示） -->
-<div class="lock-screen" id="lockScreen">
-    <h2 class="lock-title">请输入访问密码</h2>
-    <input type="password" id="accessPassword" placeholder="输入密码访问" style="padding: 10px; width: 200px; border: 1px solid #ddd; border-radius: 6px; margin-bottom: 15px;">
-    <button onclick="verifyPassword()" class="btn">确认访问</button>
-    <p class="lock-desc" style="margin-top: 15px; font-size: 14px;">密码错误将无法访问</p>
-</div>
-
-<script>
-    const ACCESS_PASSWORD = "25014105"; // 访问密码
-    // 密码验证逻辑
-    function verifyPassword() {
-        const inputPwd = document.getElementById('accessPassword').value.trim();
-        if (inputPwd === ACCESS_PASSWORD) {
-            // 验证通过，记录状态（7天内无需重复输入）
-            localStorage.setItem('accessVerified', 'true');
-            localStorage.setItem('verifyExpire', Date.now() + 7 * 24 * 60 * 60 * 1000);
-            // 显示主内容
-            document.getElementById('lockScreen').style.display = 'none';
-            document.getElementById('mainContent').style.display = 'block';
-            initAllFunctions();
-        } else {
-            alert('密码错误！请重新输入');
-            document.getElementById('accessPassword').value = '';
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>专属页面</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
-    }
-
-    // 页面加载时检查是否已验证
-    window.addEventListener('load', () => {
-        const isVerified = localStorage.getItem('accessVerified') === 'true';
-        const expireTime = localStorage.getItem('verifyExpire');
-        if (isVerified && expireTime && Date.now() < expireTime) {
-            // 已验证且未过期，直接显示内容
-            document.getElementById('lockScreen').style.display = 'none';
-            document.getElementById('mainContent').style.display = 'block';
-            initAllFunctions();
-        } else {
-            // 未验证或已过期，显示密码框
-            document.getElementById('lockScreen').style.display = 'block';
-            document.getElementById('mainContent').style.display = 'none';
+        body {
+            font-family: "Arial", "Microsoft YaHei", sans-serif;
+            text-align: center;
+            min-height: 100vh;
+            background: #f0f8ff;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            touch-action: manipulation;
         }
-    });
-</script>
+        .container {
+            max-width: 600px;
+            width: 100%;
+            padding: 25px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+            display: none; /* 默认隐藏，验证通过后显示 */
+        }
+        .lock-screen {
+            max-width: 500px;
+            width: 100%;
+            padding: 30px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        }
+        .lock-title {
+            color: #ff7043;
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+        .lock-desc {
+            color: #666;
+            font-size: 16px;
+            margin-bottom: 30px;
+        }
+        h1 {
+            color: #2196F3;
+            font-size: 28px;
+            margin-bottom: 25px;
+        }
+        /* 滑轮式计时显示（横向排列） */
+        .timer-box {
+            margin: 20px 0;
+            padding: 20px;
+            background: #e8f4f8;
+            border-radius: 8px;
+        }
+        .timer-title {
+            font-size: 18px;
+            color: #333;
+            margin-bottom: 15px;
+            cursor: pointer; /* 提示可点击 */
+        }
+        .timer-scroll {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        .timer-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .timer-number {
+            width: 80px;
+            height: 60px;
+            line-height: 60px;
+            background: white;
+            border-radius: 6px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            font-size: 24px;
+            font-weight: bold;
+            color: #2196F3;
+            margin-bottom: 5px;
+            overflow: hidden;
+            position: relative;
+        }
+        .timer-label {
+            font-size: 12px;
+            color: #666;
+        }
+        /* 计时按钮区域 */
+        .timer-btns {
+            margin: 15px 0;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 8px;
+        }
+        .btn {
+            padding: 9px 18px;
+            background: #2196F3;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 15px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn:hover {
+            background: #1976D2;
+        }
+        .btn-special {
+            background: #ff7043;
+        }
+        .btn-special:hover {
+            background: #f4511e;
+        }
+        /* 日记区域 */
+        .diary-box {
+            margin: 25px 0;
+        }
+        textarea {
+            width: 100%;
+            height: 100px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            resize: none;
+            font-size: 15px;
+            margin: 10px 0;
+            outline: none;
+            transition: border 0.2s;
+        }
+        textarea:focus {
+            border-color: #2196F3;
+        }
+        .diary-list {
+            max-height: 150px;
+            overflow-y: auto;
+            text-align: left;
+            margin-top: 10px;
+            padding-right: 5px;
+        }
+        .diary-item {
+            padding: 8px;
+            margin-bottom: 8px;
+            background: #f9f9f9;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .diary-item strong {
+            color: #2196F3;
+        }
+        /* 清空功能相关 */
+        #clearCode {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            width: 180px;
+            margin-right: 8px;
+            margin-top: 10px;
+            outline: none;
+            transition: border 0.2s;
+        }
+        #clearCode:focus {
+            border-color: #2196F3;
+        }
+        .clear-trigger {
+            margin-top: 10px;
+            color: #999;
+            font-size: 12px;
+            cursor: pointer;
+            user-select: none;
+        }
+        .clear-trigger:hover {
+            color: #666;
+        }
+        /* 音乐提示 */
+        .music-tip {
+            font-size: 12px;
+            color: #999;
+            margin: 10px 0;
+        }
+        /* 隐藏的重置按钮（点击计时标题5次显示） */
+        .hidden-reset {
+            display: none;
+            margin-top: 10px;
+        }
+        /* 计时记忆提示 */
+        .memory-tip {
+            font-size: 11px;
+            color: #888;
+            margin-top: 8px;
+        }
+    </style>
+</head>
+<body>
+    <!-- 锁定页面（默认显示） -->
+    <div class="lock-screen" id="lockScreen">
+        <h2 class="lock-title">访问受限</h2>
+        <p class="lock-desc">请使用专属NFC贴纸访问此页面，手动输入网址无效</p>
+    </div>
+
+    <!-- 主内容（验证通过后显示） -->
+    <div class="container" id="mainContent">
+        <h1>欢迎你的到来！</h1>
+
+        <!-- 音乐播放提示 -->
+        <div class="music-tip" id="musicTip">加载音乐中... 点击/滑动页面可触发播放</div>
+
+        <!-- 计时功能（滑轮式显示+隐藏重置+记忆功能） -->
+        <div class="timer-box">
+            <h3 class="timer-title" onclick="triggerHiddenReset()">计时统计</h3>
+            <div class="timer-scroll">
+                <div class="timer-item">
+                    <div class="timer-number" id="daysNum">00</div>
+                    <div class="timer-label">天</div>
+                </div>
+                <div class="timer-item">
+                    <div class="timer-number" id="hoursNum">00</div>
+                    <div class="timer-label">时</div>
+                </div>
+                <div class="timer-item">
+                    <div class="timer-number" id="minutesNum">00</div>
+                    <div class="timer-label">分</div>
+                </div>
+                <div class="timer-item">
+                    <div class="timer-number" id="secondsNum">00</div>
+                    <div class="timer-label">秒</div>
+                </div>
+            </div>
+            <div class="timer-btns">
+                <button onclick="startTimerNow()" class="btn">从现在开始计时</button>
+                <button onclick="selectStartDate()" class="btn">选择日期开始计时</button>
+                <button onclick="resetTimerToInitialState()" class="btn btn-special hidden-reset" id="hiddenResetBtn">重置计时</button>
+            </div>
+            <div class="memory-tip">✓ 自动保存计时记录，下次打开自动恢复</div>
+        </div>
+
+        <!-- 音乐播放 -->
+        <audio id="musicPlayer" loop preload="auto">
+            <source src="0623.周杰伦-晴天.mp3" type="audio/mpeg">
+            您的浏览器不支持音频播放
+        </audio>
+
+        <!-- 日记功能 -->
+        <div class="diary-box">
+            <h3>每日日记</h3>
+            <textarea id="diaryContent" placeholder="记录今天的心情..."></textarea>
+            <button onclick="saveDiary()" class="btn">保存日记</button>
+            <input type="text" id="clearCode" placeholder="输入密码清空日记" style="display: none;">
+            <button onclick="checkClearCode()" class="btn btn-special" style="display: none;">确认清空</button>
+            <div class="diary-list" id="diaryList"></div>
+        </div>
+
+        <!-- 日记清空触发入口 -->
+        <div class="clear-trigger" onclick="triggerClearEntry()">
+            点击5次显示日记清空功能
+        </div>
+    </div>
+
+    <script>
+        // 核心配置：NFC专属秘密参数（可修改为任意字符串，如复杂随机数）
+        const NFC_SECRET_KEY = "25014105";
+        let timerInterval;
+        const SPECIAL_DATE = new Date(2007, 7, 8);
+        const DEFAULT_START_DATE = new Date();
+        let clickCount = 0;
+        let resetClickCount = 0;
+        let musicPlayed = false;
+        const audio = document.getElementById('musicPlayer');
+        const musicTip = document.getElementById('musicTip');
+        const hiddenResetBtn = document.getElementById('hiddenResetBtn');
+        const pageOpenTime = new Date();
+
+        // 第一步：验证URL参数（仅NFC贴纸打开会带参数）
+        function verifyNFCParam() {
+            // 解析URL中的参数（如 ?nfc=25014105）
+            const urlParams = new URLSearchParams(window.location.search);
+            const inputKey = urlParams.get('nfc');
+            // 验证参数是否正确
+            if (inputKey === NFC_SECRET_KEY) {
+                // 验证通过：隐藏锁定页面，显示主内容
+                document.getElementById('lockScreen').style.display = 'none';
+                document.getElementById('mainContent').style.display = 'block';
+                // 初始化功能
+                initAllFunctions();
+            } else {
+                // 验证失败：保持锁定页面
+                document.getElementById('lockScreen').style.display = 'block';
+                document.getElementById('mainContent').style.display = 'none';
+            }
+        }
+
+        // 初始化所有功能（验证通过后执行）
+        function initAllFunctions() {
+            // 音乐播放初始化
+            audio.play().then(handleMusicPlaySuccess).catch(() => {
+                musicTip.textContent = '点击/滑动页面即可播放音乐';
+                const handlePlayTrigger = () => {
+                    if (!musicPlayed) {
+                        audio.play().then(handleMusicPlaySuccess).catch(() => {
+                            musicTip.textContent = '播放失败，请刷新页面重试';
+                        });
+                    }
+                };
+                document.addEventListener('click', handlePlayTrigger, { once: true });
+                document.addEventListener('touchmove', handlePlayTrigger, { once: true, passive: true });
+                document.addEventListener('mousemove', handlePlayTrigger, { once: true });
+            });
+            audio.addEventListener('error', () => {
+                musicTip.textContent = '音乐加载失败，请检查文件';
+            });
+
+            // 计时功能初始化
+            initTimer();
+            // 日记功能初始化
+            renderDiaries();
+        }
+
+        // 音乐播放成功处理
+        function handleMusicPlaySuccess() {
+            musicPlayed = true;
+            musicTip.textContent = '正在播放：周杰伦 - 晴天';
+            setTimeout(() => {
+                musicTip.style.opacity = '0.5';
+            }, 3000);
+        }
+
+        // 计时功能核心（带记忆）
+        function initTimer() {
+            const savedStart = localStorage.getItem('timerStart');
+            let startDate;
+            if (savedStart) {
+                startDate = new Date(savedStart);
+                if (isNaN(startDate.getTime()) || !(startDate.getTime() === SPECIAL_DATE.getTime() || startDate <= new Date())) {
+                    startDate = new Date();
+                    localStorage.setItem('timerStart', startDate.toISOString());
+                }
+            } else {
+                startDate = new Date();
+                localStorage.setItem('timerStart', startDate.toISOString());
+            }
+            updateTimerDisplay(startDate);
+            startTimerInterval();
+        }
+
+        function startTimerNow() {
+            const now = new Date();
+            localStorage.setItem('timerStart', now.toISOString());
+            updateTimerDisplay(now);
+            restartTimerInterval();
+        }
+
+        function selectStartDate() {
+            const maxDate = new Date().toISOString().split('T')[0];
+            const defaultDate = new Date().toISOString().split('T')[0];
+            const dateStr = prompt(`请输入开始日期（格式：YYYY-MM-DD）\n允许范围：2007-08-08 至 ${maxDate}`, defaultDate);
+            if (!dateStr) return;
+            const selectedDate = new Date(dateStr);
+            const selectedDateStr = selectedDate.toISOString().split('T')[0];
+            const specialDateStr = SPECIAL_DATE.toISOString().split('T')[0];
+            if (isNaN(selectedDate.getTime())) {
+                alert('日期格式错误！请输入类似 2024-01-01 的格式');
+                return;
+            }
+            if (selectedDateStr !== specialDateStr && selectedDate > new Date()) {
+                alert(`只能选择 ${specialDateStr} 或 ${maxDate} 之前的日期哦！`);
+                return;
+            }
+            localStorage.setItem('timerStart', selectedDate.toISOString());
+            updateTimerDisplay(selectedDate);
+            restartTimerInterval();
+        }
+
+        function resetTimerToInitialState() {
+            const initialDate = new Date();
+            localStorage.setItem('timerStart', initialDate.toISOString());
+            updateTimerDisplay(initialDate);
+            restartTimerInterval();
+            hiddenResetBtn.style.display = 'none';
+            resetClickCount = 0;
+            alert('已重置为初始计时状态（当前时间）！');
+        }
+
+        function triggerHiddenReset() {
+            resetClickCount++;
+            const titleEl = document.querySelector('.timer-title');
+            titleEl.style.color = '#ff7043';
+            setTimeout(() => {
+                titleEl.style.color = resetClickCount >= 5 ? '#333' : '#333';
+            }, 300);
+            if (resetClickCount >= 5) {
+                hiddenResetBtn.style.display = 'inline-block';
+                resetClickCount = 0;
+            }
+        }
+
+        function updateTimerDisplay(startDate) {
+            const now = new Date();
+            const timeDiff = Math.max(0, now - startDate);
+            const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((timeDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((timeDiff % (1000 * 60)) / 1000);
+            const formatNum = num => num.toString().padStart(2, '0');
+            document.getElementById('daysNum').textContent = formatNum(days);
+            document.getElementById('hoursNum').textContent = formatNum(hours);
+            document.getElementById('minutesNum').textContent = formatNum(minutes);
+            document.getElementById('secondsNum').textContent = formatNum(seconds);
+        }
+
+        function startTimerInterval() {
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                const savedStart = localStorage.getItem('timerStart');
+                if (savedStart) updateTimerDisplay(new Date(savedStart));
+            }, 1000);
+        }
+
+        function restartTimerInterval() {
+            clearInterval(timerInterval);
+            startTimerInterval();
+        }
+
+        // 日记功能
+        function saveDiary() {
+            const content = document.getElementById('diaryContent').value.trim();
+            if (!content) {
+                alert('日记内容不能为空哦！');
+                return;
+            }
+            const diary = { id: Date.now(), date: new Date().toLocaleDateString(), content: content };
+            const diaries = JSON.parse(localStorage.getItem('diaries') || '[]');
+            diaries.push(diary);
+            localStorage.setItem('diaries', JSON.stringify(diaries));
+            document.getElementById('diaryContent').value = '';
+            renderDiaries();
+        }
+
+        function renderDiaries() {
+            const list = document.getElementById('diaryList');
+            const diaries = JSON.parse(localStorage.getItem('diaries') || '[]');
+            diaries.sort((a, b) => b.id - a.id);
+            let html = '';
+            diaries.forEach(item => {
+                html += `<div class="diary-item"><strong>${item.date}</strong>：${escapeHtml(item.content)}</div>`;
+            });
+            list.innerHTML = html || '<div style="text-align: center; color: #999; padding: 10px;">暂无日记记录</div>';
+        }
+
+        function escapeHtml(str) {
+            return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        // 日记清空功能
+        function triggerClearEntry() {
+            clickCount++;
+            const triggerEl = document.querySelector('.clear-trigger');
+            triggerEl.style.color = '#ff7043';
+            setTimeout(() => {
+                triggerEl.style.color = clickCount >= 5 ? '#666' : '#999';
+            }, 300);
+            if (clickCount >= 5) {
+                document.getElementById('clearCode').style.display = 'inline-block';
+                document.querySelector('.btn-special[onclick="checkClearCode()"]').style.display = 'inline-block';
+                triggerEl.textContent = '输入密码即可清空日记';
+                clickCount = 0;
+            } else {
+                triggerEl.textContent = `点击 ${5 - clickCount} 次显示日记清空功能`;
+            }
+        }
+
+        function checkClearCode() {
+            const code = document.getElementById('clearCode').value.trim();
+            if (code === '25014105') {
+                if (confirm('确定要清空所有日记吗？此操作不可恢复！')) {
+                    localStorage.removeItem('diaries');
+                    renderDiaries();
+                    document.getElementById('clearCode').value = '';
+                    document.getElementById('clearCode').style.display = 'none';
+                    document.querySelector('.btn-special[onclick="checkClearCode()"]').style.display = 'none';
+                    document.querySelector('.clear-trigger').textContent = '点击5次显示日记清空功能';
+                }
+            } else {
+                alert('密码错误！请输入正确密码');
+                document.getElementById('clearCode').value = '';
+            }
+        }
+
+        // 页面加载时立即验证参数
+        window.addEventListener('load', verifyNFCParam);
+
+        // 页面卸载清除定时器
+        window.addEventListener('unload', () => {
+            if (timerInterval) clearInterval(timerInterval);
+        });
+    </script>
+</body>
+</html>
