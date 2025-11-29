@@ -3,199 +3,300 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <style>
-        body {
+    <title>专属页面</title>
+    <style>
+        * {
             margin: 0;
-            padding: 20px;
-            font-family: Arial, sans-serif;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: "Arial", "Microsoft YaHei", sans-serif;
             text-align: center;
-            background-color: #f5f5f5;
+            min-height: 100vh;
+            background: #f0f8ff;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
         .container {
-            max-width: 500px;
-            margin: 50px auto;
-            padding: 30px;
+            max-width: 550px;
+            width: 100%;
+            padding: 25px;
             background: white;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
         }
         h1 {
+            color: #2196F3;
+            font-size: 28px;
+            margin-bottom: 25px;
+        }
+        /* 计时区域优化 */
+        .timer-box {
+            margin: 20px 0;
+            padding: 20px;
+            background: #e8f4f8;
+            border-radius: 8px;
+        }
+        .timer-display {
+            font-size: 22px;
             color: #333;
-            font-size: 24px;
+            margin: 15px 0;
+            font-weight: 500;
         }
-        p {
-            color: #666;
-            font-size: 16px;
-            margin: 20px 0;
+        .timer-btns {
+            margin: 10px 0;
         }
-        .link-btn {
-            display: inline-block;
-            padding: 12px 24px;
-            background-color: #2196F3;
+        /* 按钮样式统一简化 */
+        .btn {
+            padding: 9px 18px;
+            background: #2196F3;
             color: white;
-            text-decoration: none;
-            border-radius: 5px;
-            font-size: 16px;
             border: none;
+            border-radius: 6px;
+            font-size: 15px;
             cursor: pointer;
-            font-family: inherit;
+            margin: 4px;
+            transition: background 0.2s;
         }
-        .link-btn:hover {
-            background-color: #1976D2;
+        .btn:hover {
+            background: #1976D2;
         }
-        .timer-container {
-            margin: 20px 0;
-            padding: 15px;
-            background-color: #f0f8ff;
-            border-radius: 5px;
+        .btn-special {
+            background: #ff7043;
         }
-        .diary-section {
-            margin-top: 30px;
+        .btn-special:hover {
+            background: #f4511e;
+        }
+        /* 日记区域精简 */
+        .diary-box {
+            margin: 25px 0;
         }
         textarea {
             width: 100%;
-            height: 150px;
-            margin: 10px 0;
+            height: 100px;
             padding: 10px;
             border: 1px solid #ddd;
-            border-radius: 5px;
-            resize: vertical;
+            border-radius: 6px;
+            resize: none;
+            font-size: 15px;
+            margin: 10px 0;
         }
-        .diary-entries {
-            margin-top: 20px;
-            text-align: left;
-            max-height: 200px;
+        .diary-list {
+            max-height: 150px;
             overflow-y: auto;
+            text-align: left;
+            margin-top: 10px;
         }
-        .diary-entry {
-            padding: 10px;
-            margin-bottom: 10px;
-            background-color: #f9f9f9;
-            border-radius: 5px;
-        }
-        .date-input {
+        .diary-item {
             padding: 8px;
-            margin: 0 10px;
+            margin-bottom: 8px;
+            background: #f9f9f9;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .diary-item strong {
+            color: #2196F3;
+        }
+        /* 清空密码区域 */
+        .clear-box {
+            margin: 15px 0;
+        }
+        #clearCode {
+            padding: 8px;
             border: 1px solid #ddd;
             border-radius: 4px;
+            width: 180px;
+            margin-right: 8px;
         }
     </style>
 </head>
 <body>
     <div class="container">
+        <!-- 欢迎语 -->
         <h1>欢迎你的到来！</h1>
-        
-        <!-- 计时功能区域 -->
-        <div class="timer-container">
+
+        <!-- 计时功能（核心优化） -->
+        <div class="timer-box">
             <h3>计时统计</h3>
-            <p>已开始: <span id="daysCount">0</span> 天</p>
-            <label for="startDate">设置开始日期: </label>
-            <input type="date" id="startDate" class="date-input">
-            <button onclick="updateStartDate()" class="link-btn">更新</button>
-        </div>
-        
-        <!-- 日记功能区域 -->
-        <div class="diary-section">
-            <h3>每日日记</h3>
-            <textarea id="diaryContent" placeholder="今天发生了什么..."></textarea>
-            <br>
-            <button onclick="saveDiary()" class="link-btn">保存日记</button>
-            <div class="diary-entries" id="diaryEntries">
-                <!-- 日记条目将在这里显示 -->
+            <div class="timer-display">
+                已记录：<span id="timeCount">0 天 0 时 0 分 0 秒</span>
+            </div>
+            <div class="timer-btns">
+                <button onclick="startTimerNow()" class="btn">从现在开始计时</button>
+                <button onclick="selectStartDate()" class="btn">选择日期开始计时</button>
+                <button onclick="resetTimerToSpecialDate()" class="btn btn-special">重置为2007-08-08</button>
             </div>
         </div>
-        
-        <a href="https://www.example.com" class="link-btn">访问目标网站</a>
+
+        <!-- 音乐播放（优化自动播放） -->
+        <audio id="musicPlayer" loop preload="auto">
+            <source src="https://github.com/qgfidt/QGFIDT.github.io/raw/refs/heads/main/0623.%E5%91%A8%E6%9D%B0%E4%BC%A6-%E6%99%B4%E5%A4%A9.mp3" type="audio/mpeg">
+            您的浏览器不支持音频播放
+        </audio>
+
+        <!-- 日记功能 -->
+        <div class="diary-box">
+            <h3>每日日记</h3>
+            <textarea id="diaryContent" placeholder="记录今天的心情..."></textarea>
+            <button onclick="saveDiary()" class="btn">保存日记</button>
+            <div class="diary-list" id="diaryList"></div>
+        </div>
+
+        <!-- 清空日记功能 -->
+        <div class="clear-box">
+            <input type="text" id="clearCode" placeholder="输入密码清空日记">
+            <button onclick="clearDiary()" class="btn btn-special">确认清空</button>
+        </div>
     </div>
 
-    <!-- 音乐播放元素 -->
-    <audio id="backgroundMusic" loop>
-        <source src="https://github.com/qgfidt/QGFIDT.github.io/raw/refs/heads/main/0623.%E5%91%A8%E6%9D%B0%E4%BC%A6-%E6%99%B4%E5%A4%A9.mp3" type="audio/mpeg">
-     您的浏览器不支持音频播放
-    </audio>
-
     <script>
-        // 自动播放音乐
+        let timerInterval; // 计时定时器
+        const SPECIAL_DATE = new Date(2007, 7, 8); // 2007-08-08（月份从0开始）
+
+        // 1. 音乐自动播放优化（优先触发播放）
         window.addEventListener('DOMContentLoaded', () => {
-            // 尝试自动播放，现代浏览器通常需要用户交互后才能播放
-            const audio = document.getElementById('backgroundMusic');
-            audio.play().catch(e => {
-                console.log('自动播放失败，等待用户交互后播放:', e);
-                // 添加用户交互监听，一旦有交互就播放音乐
-                document.body.addEventListener('click', () => {
+            const audio = document.getElementById('musicPlayer');
+            // 方案1：直接尝试自动播放
+            audio.play().catch(() => {
+                // 方案2：监听页面任意点击后播放（解决浏览器限制）
+                const triggerPlay = () => {
                     audio.play();
-                }, { once: true });
+                    document.removeEventListener('click', triggerPlay);
+                    document.removeEventListener('touchstart', triggerPlay);
+                };
+                document.addEventListener('click', triggerPlay);
+                document.addEventListener('touchstart', triggerPlay);
             });
         });
 
-        // 计时功能
-        function calculateDays() {
-            const startDateStr = localStorage.getItem('startDate') || new Date().toISOString().split('T')[0];
-            document.getElementById('startDate').value = startDateStr;
-            
-            const startDate = new Date(startDateStr);
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            
-            const timeDiff = today - startDate;
-            const daysCount = Math.max(0, Math.floor(timeDiff / (1000 * 60 * 60 * 24)));
-            document.getElementById('daysCount').textContent = daysCount;
-        }
-
-        function updateStartDate() {
-            const newDate = document.getElementById('startDate').value;
-            if (newDate) {
-                localStorage.setItem('startDate', newDate);
-                calculateDays();
+        // 2. 计时功能核心逻辑（优化实时更新）
+        // 初始化计时
+        function initTimer() {
+            const savedStart = localStorage.getItem('timerStart');
+            if (savedStart) {
+                updateTimerDisplay(new Date(savedStart));
+                startTimerInterval(); // 启动实时更新
+            } else {
+                // 默认显示2007-08-08的计时
+                updateTimerDisplay(SPECIAL_DATE);
+                startTimerInterval();
             }
         }
 
-        // 日记功能
+        // 从当前时间开始计时
+        function startTimerNow() {
+            const now = new Date();
+            localStorage.setItem('timerStart', now.toISOString());
+            updateTimerDisplay(now);
+            restartTimerInterval();
+        }
+
+        // 选择日期开始计时
+        function selectStartDate() {
+            const dateStr = prompt('请输入开始日期（格式：YYYY-MM-DD）', new Date().toISOString().split('T')[0]);
+            if (!dateStr) return;
+            const selectedDate = new Date(dateStr);
+            if (isNaN(selectedDate.getTime())) {
+                alert('日期格式错误，请重新输入！');
+                return;
+            }
+            localStorage.setItem('timerStart', selectedDate.toISOString());
+            updateTimerDisplay(selectedDate);
+            restartTimerInterval();
+        }
+
+        // 重置计时到2007-08-08
+        function resetTimerToSpecialDate() {
+            localStorage.setItem('timerStart', SPECIAL_DATE.toISOString());
+            updateTimerDisplay(SPECIAL_DATE);
+            restartTimerInterval();
+        }
+
+        // 更新计时显示（天时分秒）
+        function updateTimerDisplay(startDate) {
+            const now = new Date();
+            const timeDiff = Math.max(0, now - startDate); // 确保不出现负数
+
+            const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((timeDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((timeDiff % (1000 * 60)) / 1000);
+
+            document.getElementById('timeCount').textContent = 
+                `${days} 天 ${hours} 时 ${minutes} 分 ${seconds} 秒`;
+        }
+
+        // 启动计时定时器（每秒更新）
+        function startTimerInterval() {
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                const savedStart = localStorage.getItem('timerStart');
+                if (savedStart) {
+                    updateTimerDisplay(new Date(savedStart));
+                }
+            }, 1000);
+        }
+
+        // 重启定时器
+        function restartTimerInterval() {
+            clearInterval(timerInterval);
+            startTimerInterval();
+        }
+
+        // 3. 日记功能（精简逻辑）
         function saveDiary() {
             const content = document.getElementById('diaryContent').value.trim();
             if (!content) return;
-            
-            const today = new Date().toLocaleDateString();
-            const diaryEntry = {
-                date: today,
+
+            const diary = {
+                date: new Date().toLocaleDateString(),
                 content: content
             };
-            
-            // 从本地存储获取现有日记
-            const existingDiaries = JSON.parse(localStorage.getItem('diaries') || '[]');
-            existingDiaries.push(diaryEntry);
-            localStorage.setItem('diaries', JSON.stringify(existingDiaries));
-            
-            // 清空输入框并刷新显示
+
+            const diaries = JSON.parse(localStorage.getItem('diaries') || '[]');
+            diaries.push(diary);
+            localStorage.setItem('diaries', JSON.stringify(diaries));
+
             document.getElementById('diaryContent').value = '';
-            displayDiaries();
+            renderDiaries();
         }
 
-        function displayDiaries() {
-            const diariesContainer = document.getElementById('diaryEntries');
-            const existingDiaries = JSON.parse(localStorage.getItem('diaries') || '[]');
-            
-            // 按日期倒序显示（最新的在前面）
-            existingDiaries.sort((a, b) => new Date(b.date) - new Date(a.date));
-            
-            diariesContainer.innerHTML = existingDiaries.map(entry => `
-                <div class="diary-entry">
-                    <strong>${entry.date}</strong>
-                    <p>${entry.content}</p>
+        function renderDiaries() {
+            const list = document.getElementById('diaryList');
+            const diaries = JSON.parse(localStorage.getItem('diaries') || '[]');
+            // 倒序显示（最新在前）
+            diaries.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            list.innerHTML = diaries.map(item => `
+                <div class="diary-item">
+                    <strong>${item.date}</strong>：${item.content}
                 </div>
             `).join('');
         }
 
-        // 页面加载时初始化
+        // 4. 密码清空日记
+        function clearDiary() {
+            const code = document.getElementById('clearCode').value.trim();
+            if (code === '25014105') {
+                localStorage.removeItem('diaries');
+                document.getElementById('diaryList').innerHTML = '';
+                document.getElementById('clearCode').value = '';
+            }
+        }
+
+        // 页面加载初始化
         window.addEventListener('load', () => {
-            calculateDays();
-            displayDiaries();
+            initTimer();
+            renderDiaries();
+        });
+
+        // 页面卸载时清除定时器（优化性能）
+        window.addEventListener('unload', () => {
+            if (timerInterval) clearInterval(timerInterval);
         });
     </script>
 </body>
 </html>
-```
-
-修改说明：移除了原代码中`setTimeout(() => { window.location.href = "https://www.example.com"; }, 3000);`这部分自动跳转的逻辑，用户现在只能通过点击"访问目标网站"按钮手动跳转，不会再自动跳转了。其他功能（音乐播放、计时统计、日记功能）均保持不变。
-
-
