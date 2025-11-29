@@ -2,10 +2,8 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <!-- 适配手机屏幕（NFC多在手机上使用） -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NFC跳转页面</title>
-    <!-- 可选：简单样式优化，让页面更美观 -->
     <style>
         body {
             margin: 0;
@@ -39,23 +37,164 @@
             text-decoration: none;
             border-radius: 5px;
             font-size: 16px;
+            border: none;
+            cursor: pointer;
+            font-family: inherit;
         }
         .link-btn:hover {
             background-color: #1976D2;
+        }
+        .timer-container {
+            margin: 20px 0;
+            padding: 15px;
+            background-color: #f0f8ff;
+            border-radius: 5px;
+        }
+        .diary-section {
+            margin-top: 30px;
+        }
+        textarea {
+            width: 100%;
+            height: 150px;
+            margin: 10px 0;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            resize: vertical;
+        }
+        .diary-entries {
+            margin-top: 20px;
+            text-align: left;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .diary-entry {
+            padding: 10px;
+            margin-bottom: 10px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+        }
+        .date-input {
+            padding: 8px;
+            margin: 0 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>NFC标签已识别！</h1>
+        <h1>欢迎你的到来！</h1>
         <p>这是通过NFC触发的跳转页面</p>
-        <!-- 可选：添加额外跳转链接（比如跳转到你的官网、小程序H5等） -->
+        
+        <!-- 计时功能区域 -->
+        <div class="timer-container">
+            <h3>计时统计</h3>
+            <p>已开始: <span id="daysCount">0</span> 天</p>
+            <label for="startDate">设置开始日期: </label>
+            <input type="date" id="startDate" class="date-input">
+            <button onclick="updateStartDate()" class="link-btn">更新</button>
+        </div>
+        
+        <!-- 日记功能区域 -->
+        <div class="diary-section">
+            <h3>每日日记</h3>
+            <textarea id="diaryContent" placeholder="今天发生了什么..."></textarea>
+            <br>
+            <button onclick="saveDiary()" class="link-btn">保存日记</button>
+            <div class="diary-entries" id="diaryEntries">
+                <!-- 日记条目将在这里显示 -->
+            </div>
+        </div>
+        
         <a href="https://www.example.com" class="link-btn">访问目标网站</a>
     </div>
 
-    <!-- 可选：自动跳转逻辑（无需用户点击，打开页面后3秒自动跳转） -->
+    <!-- 音乐播放元素 -->
+    <audio id="backgroundMusic" loop>
+        <source src="https://github.com/qgfidt/QGFIDT.github.io/raw/refs/heads/main/0623.%E5%91%A8%E6%9D%B0%E4%BC%A6-%E6%99%B4%E5%A4%A9.mp3" type="audio/mpeg">
+     您的浏览器不支持音频播放
+    </audio>
+
     <script>
-        // 3秒后自动跳转到指定网址（替换为你的目标链接）
+        // 自动播放音乐
+        window.addEventListener('DOMContentLoaded', () => {
+            // 尝试自动播放，现代浏览器通常需要用户交互后才能播放
+            const audio = document.getElementById('backgroundMusic');
+            audio.play().catch(e => {
+                console.log('自动播放失败，等待用户交互后播放:', e);
+                // 添加用户交互监听，一旦有交互就播放音乐
+                document.body.addEventListener('click', () => {
+                    audio.play();
+                }, { once: true });
+            });
+        });
+
+        // 计时功能
+        function calculateDays() {
+            const startDateStr = localStorage.getItem('startDate') || new Date().toISOString().split('T')[0];
+            document.getElementById('startDate').value = startDateStr;
+            
+            const startDate = new Date(startDateStr);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            const timeDiff = today - startDate;
+            const daysCount = Math.max(0, Math.floor(timeDiff / (1000 * 60 * 60 * 24)));
+            document.getElementById('daysCount').textContent = daysCount;
+        }
+
+        function updateStartDate() {
+            const newDate = document.getElementById('startDate').value;
+            if (newDate) {
+                localStorage.setItem('startDate', newDate);
+                calculateDays();
+            }
+        }
+
+        // 日记功能
+        function saveDiary() {
+            const content = document.getElementById('diaryContent').value.trim();
+            if (!content) return;
+            
+            const today = new Date().toLocaleDateString();
+            const diaryEntry = {
+                date: today,
+                content: content
+            };
+            
+            // 从本地存储获取现有日记
+            const existingDiaries = JSON.parse(localStorage.getItem('diaries') || '[]');
+            existingDiaries.push(diaryEntry);
+            localStorage.setItem('diaries', JSON.stringify(existingDiaries));
+            
+            // 清空输入框并刷新显示
+            document.getElementById('diaryContent').value = '';
+            displayDiaries();
+        }
+
+        function displayDiaries() {
+            const diariesContainer = document.getElementById('diaryEntries');
+            const existingDiaries = JSON.parse(localStorage.getItem('diaries') || '[]');
+            
+            // 按日期倒序显示（最新的在前面）
+            existingDiaries.sort((a, b) => new Date(b.date) - new Date(a.date));
+            
+            diariesContainer.innerHTML = existingDiaries.map(entry => `
+                <div class="diary-entry">
+                    <strong>${entry.date}</strong>
+                    <p>${entry.content}</p>
+                </div>
+            `).join('');
+        }
+
+        // 页面加载时初始化
+        window.addEventListener('load', () => {
+            calculateDays();
+            displayDiaries();
+        });
+
+        // 自动跳转逻辑（3秒后）
         setTimeout(() => {
             window.location.href = "https://www.example.com";
         }, 3000);
