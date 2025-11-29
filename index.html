@@ -22,7 +22,7 @@
             touch-action: manipulation;
         }
         .container {
-            max-width: 550px;
+            max-width: 600px;
             width: 100%;
             padding: 25px;
             background: white;
@@ -34,23 +34,52 @@
             font-size: 28px;
             margin-bottom: 25px;
         }
+        /* 滑轮式计时显示（横向排列） */
         .timer-box {
             margin: 20px 0;
             padding: 20px;
             background: #e8f4f8;
             border-radius: 8px;
         }
-        .timer-display {
-            font-size: 22px;
+        .timer-title {
+            font-size: 18px;
             color: #333;
-            margin: 15px 0;
-            font-weight: 500;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            margin-bottom: 15px;
+            cursor: pointer; /* 提示可点击 */
         }
+        .timer-scroll {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        .timer-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .timer-number {
+            width: 80px;
+            height: 60px;
+            line-height: 60px;
+            background: white;
+            border-radius: 6px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            font-size: 24px;
+            font-weight: bold;
+            color: #2196F3;
+            margin-bottom: 5px;
+            overflow: hidden;
+            position: relative;
+        }
+        .timer-label {
+            font-size: 12px;
+            color: #666;
+        }
+        /* 计时按钮区域 */
         .timer-btns {
-            margin: 10px 0;
+            margin: 15px 0;
             display: flex;
             flex-wrap: wrap;
             justify-content: center;
@@ -75,6 +104,7 @@
         .btn-special:hover {
             background: #f4511e;
         }
+        /* 日记区域 */
         .diary-box {
             margin: 25px 0;
         }
@@ -110,6 +140,7 @@
         .diary-item strong {
             color: #2196F3;
         }
+        /* 清空功能相关 */
         #clearCode {
             padding: 8px;
             border: 1px solid #ddd;
@@ -133,10 +164,16 @@
         .clear-trigger:hover {
             color: #666;
         }
+        /* 音乐提示 */
         .music-tip {
             font-size: 12px;
             color: #999;
             margin: 10px 0;
+        }
+        /* 隐藏的重置按钮（点击计时标题5次显示） */
+        .hidden-reset {
+            display: none;
+            margin-top: 10px;
         }
     </style>
 </head>
@@ -144,26 +181,47 @@
     <div class="container">
         <h1>欢迎你的到来！</h1>
 
+        <!-- 音乐播放提示 -->
         <div class="music-tip" id="musicTip">加载音乐中... 点击/滑动页面可触发播放</div>
 
+        <!-- 计时功能（滑轮式显示+隐藏重置） -->
         <div class="timer-box">
-            <h3>计时统计</h3>
-            <div class="timer-display">
-                已记录：<span id="timeCount">0 天 0 时 0 分 0 秒</span>
+            <h3 class="timer-title" onclick="triggerHiddenReset()">计时统计</h3>
+            <!-- 滑轮式横向计时显示 -->
+            <div class="timer-scroll">
+                <div class="timer-item">
+                    <div class="timer-number" id="daysNum">00</div>
+                    <div class="timer-label">天</div>
+                </div>
+                <div class="timer-item">
+                    <div class="timer-number" id="hoursNum">00</div>
+                    <div class="timer-label">时</div>
+                </div>
+                <div class="timer-item">
+                    <div class="timer-number" id="minutesNum">00</div>
+                    <div class="timer-label">分</div>
+                </div>
+                <div class="timer-item">
+                    <div class="timer-number" id="secondsNum">00</div>
+                    <div class="timer-label">秒</div>
+                </div>
             </div>
+            <!-- 计时按钮 -->
             <div class="timer-btns">
                 <button onclick="startTimerNow()" class="btn">从现在开始计时</button>
                 <button onclick="selectStartDate()" class="btn">选择日期开始计时</button>
-                <button onclick="resetTimerToSpecialDate()" class="btn btn-special">重置为2007-08-08</button>
+                <!-- 隐藏的重置按钮（默认不显示） -->
+                <button onclick="resetTimerToInitialState()" class="btn btn-special hidden-reset" id="hiddenResetBtn">重置计时</button>
             </div>
         </div>
 
-        <!-- 修复音乐链接可能的编码问题 -->
+        <!-- 音乐播放 -->
         <audio id="musicPlayer" loop preload="auto">
             <source src="0623.周杰伦-晴天.mp3" type="audio/mpeg">
             您的浏览器不支持音频播放
         </audio>
 
+        <!-- 日记功能 -->
         <div class="diary-box">
             <h3>每日日记</h3>
             <textarea id="diaryContent" placeholder="记录今天的心情..."></textarea>
@@ -173,6 +231,7 @@
             <div class="diary-list" id="diaryList"></div>
         </div>
 
+        <!-- 日记清空触发入口 -->
         <div class="clear-trigger" onclick="triggerClearEntry()">
             点击5次显示日记清空功能
         </div>
@@ -180,19 +239,20 @@
 
     <script>
         let timerInterval;
-        const SPECIAL_DATE = new Date(2007, 7, 8);
-        let clickCount = 0;
+        const SPECIAL_DATE = new Date(2007, 7, 8); // 特殊重置日期（2007-08-08）
+        const DEFAULT_START_DATE = new Date(); // 默认计时起点：当前时间
+        let clickCount = 0; // 日记清空触发计数
+        let resetClickCount = 0; // 重置按钮触发计数
         let musicPlayed = false;
         const audio = document.getElementById('musicPlayer');
         const musicTip = document.getElementById('musicTip');
+        const hiddenResetBtn = document.getElementById('hiddenResetBtn');
+        const pageOpenTime = new Date(); // 记录打开网址的时间
 
-        // 音乐播放逻辑
+        // 1. 音乐播放优化
         window.addEventListener('DOMContentLoaded', () => {
-            // 尝试自动播放
             audio.play().then(handleMusicPlaySuccess).catch(() => {
                 musicTip.textContent = '点击/滑动页面即可播放音乐';
-                
-                // 绑定触发事件
                 const handlePlayTrigger = () => {
                     if (!musicPlayed) {
                         audio.play().then(handleMusicPlaySuccess).catch(() => {
@@ -200,13 +260,10 @@
                         });
                     }
                 };
-
                 document.addEventListener('click', handlePlayTrigger, { once: true });
                 document.addEventListener('touchmove', handlePlayTrigger, { once: true, passive: true });
                 document.addEventListener('mousemove', handlePlayTrigger, { once: true });
             });
-
-            // 监听音乐错误
             audio.addEventListener('error', () => {
                 musicTip.textContent = '音乐加载失败，请检查文件';
             });
@@ -220,20 +277,30 @@
             }, 3000);
         }
 
-        // 计时功能
+        // 2. 计时功能核心优化（默认当前时间）
         function initTimer() {
             const savedStart = localStorage.getItem('timerStart');
-            const startDate = savedStart ? new Date(savedStart) : SPECIAL_DATE;
-            
-            if (isNaN(startDate.getTime())) {
-                localStorage.removeItem('timerStart');
-                startDate = SPECIAL_DATE;
+            let startDate;
+
+            // 优先使用本地存储的日期，无则默认当前时间（DEFAULT_START_DATE）
+            if (savedStart) {
+                startDate = new Date(savedStart);
+                // 验证存储的日期是否合法（只能是2007-08-08或页面打开时间之前）
+                if (isNaN(startDate.getTime()) || 
+                    !(startDate.getTime() === SPECIAL_DATE.getTime() || startDate <= pageOpenTime)) {
+                    startDate = DEFAULT_START_DATE; // 非法日期时默认当前时间
+                    localStorage.setItem('timerStart', startDate.toISOString());
+                }
+            } else {
+                startDate = DEFAULT_START_DATE;
+                localStorage.setItem('timerStart', startDate.toISOString());
             }
-            
+
             updateTimerDisplay(startDate);
             startTimerInterval();
         }
 
+        // 从现在开始计时（强制更新为当前最新时间）
         function startTimerNow() {
             const now = new Date();
             localStorage.setItem('timerStart', now.toISOString());
@@ -241,32 +308,66 @@
             restartTimerInterval();
         }
 
+        // 选择日期开始计时（限制：只能选2007-08-08或页面打开时间之前的日期）
         function selectStartDate() {
-            const dateStr = prompt('请输入开始日期（格式：YYYY-MM-DD）', new Date().toISOString().split('T')[0]);
+            const maxDate = pageOpenTime.toISOString().split('T')[0];
+            const defaultDate = pageOpenTime.toISOString().split('T')[0];
+            const dateStr = prompt(`请输入开始日期（格式：YYYY-MM-DD）\n允许范围：2007-08-08 至 ${maxDate}`, defaultDate);
+            
             if (!dateStr) return;
             
             const selectedDate = new Date(dateStr);
+            const selectedDateStr = selectedDate.toISOString().split('T')[0];
+            const specialDateStr = SPECIAL_DATE.toISOString().split('T')[0];
+
+            // 验证日期合法性
             if (isNaN(selectedDate.getTime())) {
                 alert('日期格式错误！请输入类似 2024-01-01 的格式');
                 return;
             }
-            
-            if (selectedDate > new Date()) {
-                alert('不能选择未来的日期哦！');
+
+            // 允许的日期：2007-08-08 或 页面打开时间之前的日期
+            if (selectedDateStr !== specialDateStr && selectedDate > pageOpenTime) {
+                alert(`只能选择 ${specialDateStr} 或 ${maxDate} 之前的日期哦！`);
                 return;
             }
-            
+
             localStorage.setItem('timerStart', selectedDate.toISOString());
             updateTimerDisplay(selectedDate);
             restartTimerInterval();
         }
 
-        function resetTimerToSpecialDate() {
-            localStorage.setItem('timerStart', SPECIAL_DATE.toISOString());
-            updateTimerDisplay(SPECIAL_DATE);
+        // 重置到初始状态（默认当前时间），重置后仍可正常选择日期/从现在计时
+        function resetTimerToInitialState() {
+            // 重置本地存储的日期为默认值（当前时间）
+            localStorage.setItem('timerStart', DEFAULT_START_DATE.toISOString());
+            // 更新计时显示
+            updateTimerDisplay(DEFAULT_START_DATE);
+            // 重启定时器确保实时更新
             restartTimerInterval();
+            // 重置后隐藏按钮（保持隐藏逻辑）
+            hiddenResetBtn.style.display = 'none';
+            resetClickCount = 0;
+            // 给出重置成功提示
+            alert('已重置为初始计时状态（当前时间）！');
         }
 
+        // 点击计时标题5次显示重置按钮（逻辑不变）
+        function triggerHiddenReset() {
+            resetClickCount++;
+            const titleEl = document.querySelector('.timer-title');
+            titleEl.style.color = '#ff7043';
+            setTimeout(() => {
+                titleEl.style.color = resetClickCount >= 5 ? '#333' : '#333';
+            }, 300);
+
+            if (resetClickCount >= 5) {
+                hiddenResetBtn.style.display = 'inline-block';
+                resetClickCount = 0;
+            }
+        }
+
+        // 滑轮式计时显示更新
         function updateTimerDisplay(startDate) {
             const now = new Date();
             const timeDiff = Math.max(0, now - startDate);
@@ -276,11 +377,15 @@
             const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
             const seconds = Math.floor((timeDiff % (1000 * 60)) / 1000);
 
+            // 补零并更新滑轮数字
             const formatNum = num => num.toString().padStart(2, '0');
-            document.getElementById('timeCount').textContent = 
-                `${formatNum(days)} 天 ${formatNum(hours)} 时 ${formatNum(minutes)} 分 ${formatNum(seconds)} 秒`;
+            document.getElementById('daysNum').textContent = formatNum(days);
+            document.getElementById('hoursNum').textContent = formatNum(hours);
+            document.getElementById('minutesNum').textContent = formatNum(minutes);
+            document.getElementById('secondsNum').textContent = formatNum(seconds);
         }
 
+        // 计时定时器
         function startTimerInterval() {
             if (timerInterval) clearInterval(timerInterval);
             timerInterval = setInterval(() => {
@@ -296,24 +401,21 @@
             startTimerInterval();
         }
 
-        // 日记功能
+        // 3. 日记功能（保持原有优化）
         function saveDiary() {
             const content = document.getElementById('diaryContent').value.trim();
             if (!content) {
                 alert('日记内容不能为空哦！');
                 return;
             }
-
             const diary = {
                 id: Date.now(),
                 date: new Date().toLocaleDateString(),
                 content: content
             };
-
             const diaries = JSON.parse(localStorage.getItem('diaries') || '[]');
             diaries.push(diary);
             localStorage.setItem('diaries', JSON.stringify(diaries));
-
             document.getElementById('diaryContent').value = '';
             renderDiaries();
         }
@@ -338,7 +440,7 @@
             return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
         }
 
-        // 清空功能
+        // 4. 日记清空功能（保持原有隐藏逻辑）
         function triggerClearEntry() {
             clickCount++;
             const triggerEl = document.querySelector('.clear-trigger');
@@ -374,12 +476,13 @@
             }
         }
 
-        // 初始化
+        // 页面初始化
         window.addEventListener('load', () => {
             initTimer();
             renderDiaries();
         });
 
+        // 页面卸载清除定时器
         window.addEventListener('unload', () => {
             if (timerInterval) clearInterval(timerInterval);
         });
