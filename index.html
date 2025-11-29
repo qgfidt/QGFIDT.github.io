@@ -175,6 +175,12 @@
             display: none;
             margin-top: 10px;
         }
+        /* 计时记忆提示（新增） */
+        .memory-tip {
+            font-size: 11px;
+            color: #888;
+            margin-top: 8px;
+        }
     </style>
 </head>
 <body>
@@ -184,7 +190,7 @@
         <!-- 音乐播放提示 -->
         <div class="music-tip" id="musicTip">加载音乐中... 点击/滑动页面可触发播放</div>
 
-        <!-- 计时功能（滑轮式显示+隐藏重置） -->
+        <!-- 计时功能（滑轮式显示+隐藏重置+记忆功能） -->
         <div class="timer-box">
             <h3 class="timer-title" onclick="triggerHiddenReset()">计时统计</h3>
             <!-- 滑轮式横向计时显示 -->
@@ -213,6 +219,8 @@
                 <!-- 隐藏的重置按钮（默认不显示） -->
                 <button onclick="resetTimerToInitialState()" class="btn btn-special hidden-reset" id="hiddenResetBtn">重置计时</button>
             </div>
+            <!-- 计时记忆提示 -->
+            <div class="memory-tip">✓ 自动保存计时记录，下次打开自动恢复</div>
         </div>
 
         <!-- 音乐播放 -->
@@ -277,41 +285,45 @@
             }, 3000);
         }
 
-        // 2. 计时功能核心优化（默认当前时间）
+        // 2. 计时功能核心优化（重点：记忆保存功能）
         function initTimer() {
             const savedStart = localStorage.getItem('timerStart');
             let startDate;
 
-            // 优先使用本地存储的日期，无则默认当前时间（DEFAULT_START_DATE）
+            // 核心记忆逻辑：优先读取本地存储的计时起点（上次关闭时的起点）
             if (savedStart) {
                 startDate = new Date(savedStart);
-                // 验证存储的日期是否合法（只能是2007-08-08或页面打开时间之前）
+                // 验证存储的日期是否合法（防止篡改或过期）
                 if (isNaN(startDate.getTime()) || 
-                    !(startDate.getTime() === SPECIAL_DATE.getTime() || startDate <= pageOpenTime)) {
-                    startDate = DEFAULT_START_DATE; // 非法日期时默认当前时间
+                    !(startDate.getTime() === SPECIAL_DATE.getTime() || startDate <= new Date())) {
+                    // 非法日期时，使用默认当前时间并更新存储
+                    startDate = new Date();
                     localStorage.setItem('timerStart', startDate.toISOString());
                 }
             } else {
-                startDate = DEFAULT_START_DATE;
+                // 无存储记录时，使用当前时间作为初始起点并保存
+                startDate = new Date();
                 localStorage.setItem('timerStart', startDate.toISOString());
             }
 
+            // 更新显示并启动计时
             updateTimerDisplay(startDate);
             startTimerInterval();
         }
 
-        // 从现在开始计时（强制更新为当前最新时间）
+        // 从现在开始计时（更新并保存新起点）
         function startTimerNow() {
             const now = new Date();
+            // 保存新起点到本地存储（覆盖旧记录）
             localStorage.setItem('timerStart', now.toISOString());
             updateTimerDisplay(now);
             restartTimerInterval();
         }
 
-        // 选择日期开始计时（限制：只能选2007-08-08或页面打开时间之前的日期）
+        // 选择日期开始计时（保存选择的起点）
         function selectStartDate() {
-            const maxDate = pageOpenTime.toISOString().split('T')[0];
-            const defaultDate = pageOpenTime.toISOString().split('T')[0];
+            const maxDate = new Date().toISOString().split('T')[0];
+            const defaultDate = new Date().toISOString().split('T')[0];
             const dateStr = prompt(`请输入开始日期（格式：YYYY-MM-DD）\n允许范围：2007-08-08 至 ${maxDate}`, defaultDate);
             
             if (!dateStr) return;
@@ -326,33 +338,32 @@
                 return;
             }
 
-            // 允许的日期：2007-08-08 或 页面打开时间之前的日期
-            if (selectedDateStr !== specialDateStr && selectedDate > pageOpenTime) {
+            // 允许的日期：2007-08-08 或 当前时间之前的日期
+            if (selectedDateStr !== specialDateStr && selectedDate > new Date()) {
                 alert(`只能选择 ${specialDateStr} 或 ${maxDate} 之前的日期哦！`);
                 return;
             }
 
+            // 保存选择的日期到本地存储
             localStorage.setItem('timerStart', selectedDate.toISOString());
             updateTimerDisplay(selectedDate);
             restartTimerInterval();
         }
 
-        // 重置到初始状态（默认当前时间），重置后仍可正常选择日期/从现在计时
+        // 重置到初始状态（当前时间）并更新存储
         function resetTimerToInitialState() {
-            // 重置本地存储的日期为默认值（当前时间）
-            localStorage.setItem('timerStart', DEFAULT_START_DATE.toISOString());
-            // 更新计时显示
-            updateTimerDisplay(DEFAULT_START_DATE);
-            // 重启定时器确保实时更新
+            const initialDate = new Date();
+            // 重置本地存储的起点为当前时间
+            localStorage.setItem('timerStart', initialDate.toISOString());
+            updateTimerDisplay(initialDate);
             restartTimerInterval();
-            // 重置后隐藏按钮（保持隐藏逻辑）
+            // 重置后隐藏按钮
             hiddenResetBtn.style.display = 'none';
             resetClickCount = 0;
-            // 给出重置成功提示
             alert('已重置为初始计时状态（当前时间）！');
         }
 
-        // 点击计时标题5次显示重置按钮（逻辑不变）
+        // 点击计时标题5次显示重置按钮
         function triggerHiddenReset() {
             resetClickCount++;
             const titleEl = document.querySelector('.timer-title');
@@ -385,7 +396,7 @@
             document.getElementById('secondsNum').textContent = formatNum(seconds);
         }
 
-        // 计时定时器
+        // 计时定时器（每秒更新，确保实时性）
         function startTimerInterval() {
             if (timerInterval) clearInterval(timerInterval);
             timerInterval = setInterval(() => {
@@ -401,7 +412,7 @@
             startTimerInterval();
         }
 
-        // 3. 日记功能（保持原有优化）
+        // 3. 日记功能（已自带本地存储记忆）
         function saveDiary() {
             const content = document.getElementById('diaryContent').value.trim();
             if (!content) {
@@ -440,7 +451,7 @@
             return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
         }
 
-        // 4. 日记清空功能（保持原有隐藏逻辑）
+        // 4. 日记清空功能
         function triggerClearEntry() {
             clickCount++;
             const triggerEl = document.querySelector('.clear-trigger');
@@ -476,13 +487,13 @@
             }
         }
 
-        // 页面初始化
+        // 页面初始化（加载记忆的计时和日记）
         window.addEventListener('load', () => {
-            initTimer();
-            renderDiaries();
+            initTimer(); // 加载记忆的计时状态
+            renderDiaries(); // 加载记忆的日记记录
         });
 
-        // 页面卸载清除定时器
+        // 页面卸载时清除定时器（优化性能，不影响存储）
         window.addEventListener('unload', () => {
             if (timerInterval) clearInterval(timerInterval);
         });
