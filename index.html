@@ -19,6 +19,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
+            touch-action: manipulation;
         }
         .container {
             max-width: 550px;
@@ -33,7 +34,6 @@
             font-size: 28px;
             margin-bottom: 25px;
         }
-        /* 计时区域优化 */
         .timer-box {
             margin: 20px 0;
             padding: 20px;
@@ -45,11 +45,17 @@
             color: #333;
             margin: 15px 0;
             font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
         .timer-btns {
             margin: 10px 0;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 8px;
         }
-        /* 按钮样式统一简化 */
         .btn {
             padding: 9px 18px;
             background: #2196F3;
@@ -58,7 +64,6 @@
             border-radius: 6px;
             font-size: 15px;
             cursor: pointer;
-            margin: 4px;
             transition: background 0.2s;
         }
         .btn:hover {
@@ -70,7 +75,6 @@
         .btn-special:hover {
             background: #f4511e;
         }
-        /* 日记区域精简 */
         .diary-box {
             margin: 25px 0;
         }
@@ -83,12 +87,18 @@
             resize: none;
             font-size: 15px;
             margin: 10px 0;
+            outline: none;
+            transition: border 0.2s;
+        }
+        textarea:focus {
+            border-color: #2196F3;
         }
         .diary-list {
             max-height: 150px;
             overflow-y: auto;
             text-align: left;
             margin-top: 10px;
+            padding-right: 5px;
         }
         .diary-item {
             padding: 8px;
@@ -100,25 +110,42 @@
         .diary-item strong {
             color: #2196F3;
         }
-        /* 清空密码区域 */
-        .clear-box {
-            margin: 15px 0;
-        }
         #clearCode {
             padding: 8px;
             border: 1px solid #ddd;
             border-radius: 4px;
             width: 180px;
             margin-right: 8px;
+            margin-top: 10px;
+            outline: none;
+            transition: border 0.2s;
+        }
+        #clearCode:focus {
+            border-color: #2196F3;
+        }
+        .clear-trigger {
+            margin-top: 10px;
+            color: #999;
+            font-size: 12px;
+            cursor: pointer;
+            user-select: none;
+        }
+        .clear-trigger:hover {
+            color: #666;
+        }
+        .music-tip {
+            font-size: 12px;
+            color: #999;
+            margin: 10px 0;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <!-- 欢迎语 -->
         <h1>欢迎你的到来！</h1>
 
-        <!-- 计时功能（核心优化） -->
+        <div class="music-tip" id="musicTip">加载音乐中... 点击/滑动页面可触发播放</div>
+
         <div class="timer-box">
             <h3>计时统计</h3>
             <div class="timer-display">
@@ -131,62 +158,82 @@
             </div>
         </div>
 
-        <!-- 音乐播放（优化自动播放） -->
+        <!-- 修复音乐链接可能的编码问题 -->
         <audio id="musicPlayer" loop preload="auto">
-            <source src="https://github.com/qgfidt/QGFIDT.github.io/raw/refs/heads/main/0623.%E5%91%A8%E6%9D%B0%E4%BC%A6-%E6%99%B4%E5%A4%A9.mp3" type="audio/mpeg">
+            <source src="0623.周杰伦-晴天.mp3" type="audio/mpeg">
             您的浏览器不支持音频播放
         </audio>
 
-        <!-- 日记功能 -->
         <div class="diary-box">
             <h3>每日日记</h3>
             <textarea id="diaryContent" placeholder="记录今天的心情..."></textarea>
             <button onclick="saveDiary()" class="btn">保存日记</button>
+            <input type="text" id="clearCode" placeholder="输入密码清空日记" style="display: none;">
+            <button onclick="checkClearCode()" class="btn btn-special" style="display: none;">确认清空</button>
             <div class="diary-list" id="diaryList"></div>
         </div>
 
-        <!-- 清空日记功能 -->
-        <div class="clear-box">
-            <input type="text" id="clearCode" placeholder="输入密码清空日记">
-            <button onclick="clearDiary()" class="btn btn-special">确认清空</button>
+        <div class="clear-trigger" onclick="triggerClearEntry()">
+            点击5次显示日记清空功能
         </div>
     </div>
 
     <script>
-        let timerInterval; // 计时定时器
-        const SPECIAL_DATE = new Date(2007, 7, 8); // 2007-08-08（月份从0开始）
+        let timerInterval;
+        const SPECIAL_DATE = new Date(2007, 7, 8);
+        let clickCount = 0;
+        let musicPlayed = false;
+        const audio = document.getElementById('musicPlayer');
+        const musicTip = document.getElementById('musicTip');
 
-        // 1. 音乐自动播放优化（优先触发播放）
+        // 音乐播放逻辑
         window.addEventListener('DOMContentLoaded', () => {
-            const audio = document.getElementById('musicPlayer');
-            // 方案1：直接尝试自动播放
-            audio.play().catch(() => {
-                // 方案2：监听页面任意点击后播放（解决浏览器限制）
-                const triggerPlay = () => {
-                    audio.play();
-                    document.removeEventListener('click', triggerPlay);
-                    document.removeEventListener('touchstart', triggerPlay);
+            // 尝试自动播放
+            audio.play().then(handleMusicPlaySuccess).catch(() => {
+                musicTip.textContent = '点击/滑动页面即可播放音乐';
+                
+                // 绑定触发事件
+                const handlePlayTrigger = () => {
+                    if (!musicPlayed) {
+                        audio.play().then(handleMusicPlaySuccess).catch(() => {
+                            musicTip.textContent = '播放失败，请刷新页面重试';
+                        });
+                    }
                 };
-                document.addEventListener('click', triggerPlay);
-                document.addEventListener('touchstart', triggerPlay);
+
+                document.addEventListener('click', handlePlayTrigger, { once: true });
+                document.addEventListener('touchmove', handlePlayTrigger, { once: true, passive: true });
+                document.addEventListener('mousemove', handlePlayTrigger, { once: true });
+            });
+
+            // 监听音乐错误
+            audio.addEventListener('error', () => {
+                musicTip.textContent = '音乐加载失败，请检查文件';
             });
         });
 
-        // 2. 计时功能核心逻辑（优化实时更新）
-        // 初始化计时
-        function initTimer() {
-            const savedStart = localStorage.getItem('timerStart');
-            if (savedStart) {
-                updateTimerDisplay(new Date(savedStart));
-                startTimerInterval(); // 启动实时更新
-            } else {
-                // 默认显示2007-08-08的计时
-                updateTimerDisplay(SPECIAL_DATE);
-                startTimerInterval();
-            }
+        function handleMusicPlaySuccess() {
+            musicPlayed = true;
+            musicTip.textContent = '正在播放：周杰伦 - 晴天';
+            setTimeout(() => {
+                musicTip.style.opacity = '0.5';
+            }, 3000);
         }
 
-        // 从当前时间开始计时
+        // 计时功能
+        function initTimer() {
+            const savedStart = localStorage.getItem('timerStart');
+            const startDate = savedStart ? new Date(savedStart) : SPECIAL_DATE;
+            
+            if (isNaN(startDate.getTime())) {
+                localStorage.removeItem('timerStart');
+                startDate = SPECIAL_DATE;
+            }
+            
+            updateTimerDisplay(startDate);
+            startTimerInterval();
+        }
+
         function startTimerNow() {
             const now = new Date();
             localStorage.setItem('timerStart', now.toISOString());
@@ -194,42 +241,46 @@
             restartTimerInterval();
         }
 
-        // 选择日期开始计时
         function selectStartDate() {
             const dateStr = prompt('请输入开始日期（格式：YYYY-MM-DD）', new Date().toISOString().split('T')[0]);
             if (!dateStr) return;
+            
             const selectedDate = new Date(dateStr);
             if (isNaN(selectedDate.getTime())) {
-                alert('日期格式错误，请重新输入！');
+                alert('日期格式错误！请输入类似 2024-01-01 的格式');
                 return;
             }
+            
+            if (selectedDate > new Date()) {
+                alert('不能选择未来的日期哦！');
+                return;
+            }
+            
             localStorage.setItem('timerStart', selectedDate.toISOString());
             updateTimerDisplay(selectedDate);
             restartTimerInterval();
         }
 
-        // 重置计时到2007-08-08
         function resetTimerToSpecialDate() {
             localStorage.setItem('timerStart', SPECIAL_DATE.toISOString());
             updateTimerDisplay(SPECIAL_DATE);
             restartTimerInterval();
         }
 
-        // 更新计时显示（天时分秒）
         function updateTimerDisplay(startDate) {
             const now = new Date();
-            const timeDiff = Math.max(0, now - startDate); // 确保不出现负数
+            const timeDiff = Math.max(0, now - startDate);
 
             const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
             const hours = Math.floor((timeDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
             const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
             const seconds = Math.floor((timeDiff % (1000 * 60)) / 1000);
 
+            const formatNum = num => num.toString().padStart(2, '0');
             document.getElementById('timeCount').textContent = 
-                `${days} 天 ${hours} 时 ${minutes} 分 ${seconds} 秒`;
+                `${formatNum(days)} 天 ${formatNum(hours)} 时 ${formatNum(minutes)} 分 ${formatNum(seconds)} 秒`;
         }
 
-        // 启动计时定时器（每秒更新）
         function startTimerInterval() {
             if (timerInterval) clearInterval(timerInterval);
             timerInterval = setInterval(() => {
@@ -240,18 +291,21 @@
             }, 1000);
         }
 
-        // 重启定时器
         function restartTimerInterval() {
             clearInterval(timerInterval);
             startTimerInterval();
         }
 
-        // 3. 日记功能（精简逻辑）
+        // 日记功能
         function saveDiary() {
             const content = document.getElementById('diaryContent').value.trim();
-            if (!content) return;
+            if (!content) {
+                alert('日记内容不能为空哦！');
+                return;
+            }
 
             const diary = {
+                id: Date.now(),
                 date: new Date().toLocaleDateString(),
                 content: content
             };
@@ -267,33 +321,65 @@
         function renderDiaries() {
             const list = document.getElementById('diaryList');
             const diaries = JSON.parse(localStorage.getItem('diaries') || '[]');
-            // 倒序显示（最新在前）
-            diaries.sort((a, b) => new Date(b.date) - new Date(a.date));
+            diaries.sort((a, b) => b.id - a.id);
 
-            list.innerHTML = diaries.map(item => `
-                <div class="diary-item">
-                    <strong>${item.date}</strong>：${item.content}
-                </div>
-            `).join('');
+            let html = '';
+            diaries.forEach(item => {
+                html += `
+                    <div class="diary-item">
+                        <strong>${item.date}</strong>：${escapeHtml(item.content)}
+                    </div>
+                `;
+            });
+            list.innerHTML = html || '<div style="text-align: center; color: #999; padding: 10px;">暂无日记记录</div>';
         }
 
-        // 4. 密码清空日记
-        function clearDiary() {
+        function escapeHtml(str) {
+            return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        // 清空功能
+        function triggerClearEntry() {
+            clickCount++;
+            const triggerEl = document.querySelector('.clear-trigger');
+            triggerEl.style.color = '#ff7043';
+            setTimeout(() => {
+                triggerEl.style.color = clickCount >= 5 ? '#666' : '#999';
+            }, 300);
+
+            if (clickCount >= 5) {
+                document.getElementById('clearCode').style.display = 'inline-block';
+                document.querySelector('.btn-special[onclick="checkClearCode()"]').style.display = 'inline-block';
+                triggerEl.textContent = '输入密码即可清空日记';
+                clickCount = 0;
+            } else {
+                triggerEl.textContent = `点击 ${5 - clickCount} 次显示日记清空功能`;
+            }
+        }
+
+        function checkClearCode() {
             const code = document.getElementById('clearCode').value.trim();
             if (code === '25014105') {
-                localStorage.removeItem('diaries');
-                document.getElementById('diaryList').innerHTML = '';
+                if (confirm('确定要清空所有日记吗？此操作不可恢复！')) {
+                    localStorage.removeItem('diaries');
+                    renderDiaries();
+                    document.getElementById('clearCode').value = '';
+                    document.getElementById('clearCode').style.display = 'none';
+                    document.querySelector('.btn-special[onclick="checkClearCode()"]').style.display = 'none';
+                    document.querySelector('.clear-trigger').textContent = '点击5次显示日记清空功能';
+                }
+            } else {
+                alert('密码错误！请输入正确密码');
                 document.getElementById('clearCode').value = '';
             }
         }
 
-        // 页面加载初始化
+        // 初始化
         window.addEventListener('load', () => {
             initTimer();
             renderDiaries();
         });
 
-        // 页面卸载时清除定时器（优化性能）
         window.addEventListener('unload', () => {
             if (timerInterval) clearInterval(timerInterval);
         });
