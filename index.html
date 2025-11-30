@@ -1184,8 +1184,9 @@
             }
         }
 
-        // 账户功能
+        // 账户功能 - 修复后版本（增加日志输出）
         function createAccount() {
+            console.log('创建账户按钮被点击');
             const userName = document.getElementById('userName').value.trim();
             const userPwd = document.getElementById('userPwd').value.trim();
             const nickname = document.getElementById('coupleNickname').value.trim();
@@ -1231,14 +1232,17 @@
             document.getElementById('userName').value = '';
             document.getElementById('userPwd').value = '';
             document.getElementById('coupleNickname').value = '';
+            console.log('账户创建成功', userName);
         }
 
         function loginAccount() {
+            console.log('登录按钮被点击');
             const userName = document.getElementById('userName').value.trim();
             const userPwd = document.getElementById('userPwd').value.trim();
 
             if (!userName || !userPwd) {
                 alert('用户名和密码不能为空！');
+                console.log('用户名/密码为空');
                 return;
             }
 
@@ -1247,6 +1251,7 @@
 
             if (!account) {
                 alert('用户名或密码错误！');
+                console.log('用户名/密码错误', userName);
                 return;
             }
 
@@ -1262,6 +1267,7 @@
             document.getElementById('userName').value = '';
             document.getElementById('userPwd').value = '';
             document.getElementById('coupleNickname').value = '';
+            console.log('登录成功', currentUser);
         }
 
         function logoutAccount() {
@@ -1625,7 +1631,7 @@
             document.getElementById('milestoneModal').style.display = 'flex';
         }
 
-        // 日记相关功能
+        // 日记相关功能 - 补全修复后版本
         function bindDiaryWordCount() {
             const diaryContentEl = document.getElementById('diaryContent');
             diaryContentEl.addEventListener('input', () => {
@@ -1677,6 +1683,7 @@
             }
         }
 
+        // 补全被截断的 renderDiaries 函数
         function renderDiaries() {
             const diaryListEl = document.getElementById('diaryList');
             const diaryType = document.getElementById('diaryTypeSelect').value;
@@ -1690,13 +1697,4 @@
 
             if (filteredDiaries.length === 0) {
                 diaryListEl.innerHTML = `
-                    <div style="text-align: center; color: var(--text-light); padding: 20px;">
-                        还没有${diaryType === 'couple' ? '情侣' : '个人'}日记哦～ 写下你们的故事吧❤️
-                    </div>
-                `;
-                return;
-            }
-
-            let html = '';
-            filteredDiaries.forEach(diary => {
-                const isMyDiary = diary.authorType
+                    <div style="text-align: center; color: var
