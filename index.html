@@ -46,7 +46,7 @@
             align-items: center;
             transition: background 0.3s, color 0.3s;
         }
-        /* 登录面板（确保100%显示，无布局错乱） */
+        /* 登录面板（确保按钮可点击，无遮挡） */
         .auth-panel {
             width: 100%;
             max-width: 420px;
@@ -57,7 +57,9 @@
             text-align: center;
             margin-bottom: 20px;
             border: 1px solid var(--border);
-            display: block !important; /* 强制显示，防止被隐藏 */
+            display: block !important; /* 强制显示，避免被隐藏 */
+            position: relative;
+            z-index: 10;
         }
         .panel-title {
             color: var(--primary);
@@ -92,6 +94,7 @@
             outline: none;
             background: var(--card-bg);
             color: var(--text);
+            transition: all 0.2s;
         }
         .form-control:focus {
             border-color: var(--primary);
@@ -108,6 +111,8 @@
             cursor: pointer;
             transition: background 0.2s;
             margin-bottom: 12px;
+            opacity: 1;
+            pointer-events: auto;
         }
         .btn:hover {
             background: var(--primary-dark);
@@ -667,7 +672,7 @@
             font-size: 14px;
             color: var(--text);
         }
-        /* 响应式适配（完美兼容手机/平板/电脑） */
+        /* 响应式适配（确保移动端登录按钮可点击） */
         @media (max-width: 768px) {
             .main-container {
                 padding: 20px;
@@ -696,6 +701,17 @@
                 height: 80px;
                 font-size: 28px;
             }
+            .auth-panel {
+                padding: 25px 20px;
+            }
+            .form-control {
+                padding: 12px 15px;
+                font-size: 15px;
+            }
+            .btn {
+                padding: 12px;
+                font-size: 15px;
+            }
         }
     </style>
 </head>
@@ -707,21 +723,22 @@
         
         <div class="form-group">
             <label class="form-label">用户名</label>
-            <input type="text" id="userName" class="form-control" placeholder="输入用户名" autocomplete="off">
+            <input type="text" id="userName" class="form-control" placeholder="输入用户名（2-20字符）" autocomplete="off">
         </div>
         <div class="form-group">
-            <label class="form-label">密码（至少6位）</label>
-            <input type="password" id="userPwd" class="form-control" placeholder="输入密码" autocomplete="off">
+            <label class="form-label">密码</label>
+            <input type="password" id="userPwd" class="form-control" placeholder="输入密码（6-20字符）" autocomplete="off">
         </div>
         <div class="form-group">
             <label class="form-label">你的情侣昵称</label>
-            <input type="text" id="coupleNickname" class="form-control" placeholder="如：宝宝" autocomplete="off">
+            <input type="text" id="coupleNickname" class="form-control" placeholder="如：宝宝（最多10字符）" autocomplete="off">
         </div>
         
-        <button onclick="loginAccount()" class="btn">登录账户</button>
-        <button onclick="createAccount()" class="btn btn-secondary">创建账户</button>
+        <!-- 修复按钮事件绑定：使用DOM原生事件，避免函数未定义问题 -->
+        <button id="loginBtn" class="btn">登录账户</button>
+        <button id="createBtn" class="btn btn-secondary">创建账户</button>
         
-        <div class="nfc-bind-btn" onclick="nfcQuickBind()">
+        <div class="nfc-bind-btn" id="nfcBindBtn">
             🔑 用情侣钥匙扣快速绑定
         </div>
         
@@ -736,11 +753,11 @@
         <div class="main-header">
             <h2 class="main-title" id="welcomeTitle">❤️ 情侣时光</h2>
             <div class="header-actions">
-                <button class="theme-toggle" id="themeToggle" onclick="toggleDarkMode()">
+                <button class="theme-toggle" id="themeToggle">
                     <span id="themeIcon">🌙</span>
                     <span id="themeText">黑暗模式</span>
                 </button>
-                <button class="logout-btn" onclick="logoutAccount()">退出</button>
+                <button class="logout-btn" id="logoutBtn">退出</button>
             </div>
         </div>
 
@@ -750,14 +767,14 @@
             <div class="section-content">
                 <div class="avatar-container">
                     <div class="avatar-item">
-                        <div class="avatar-wrapper" onclick="openAvatarModal('me')">
+                        <div class="avatar-wrapper" id="myAvatarWrapper">
                             <img id="myAvatarImg" class="avatar-img" style="display: none;" />
                             <span id="myAvatarText">我</span>
                         </div>
                         <div class="avatar-name" id="myNicknameText">未设置</div>
                     </div>
                     <div class="avatar-item">
-                        <div class="avatar-wrapper" onclick="openAvatarModal('ta')">
+                        <div class="avatar-wrapper" id="taAvatarWrapper">
                             <img id="taAvatarImg" class="avatar-img" style="display: none;" />
                             <span id="taAvatarText">TA</span>
                         </div>
@@ -765,8 +782,8 @@
                     </div>
                 </div>
                 <div style="text-align: center;">
-                    <button class="btn" style="width: 100%; max-width: 200px; margin-bottom: 10px;" id="bindBtn" onclick="openBindModal()">绑定情侣</button>
-                    <button class="btn btn-secondary" style="width: 100%; max-width: 200px;" onclick="nfcQuickBind()">钥匙扣快速绑定</button>
+                    <button class="btn" style="width: 100%; max-width: 200px; margin-bottom: 10px;" id="bindBtn">绑定情侣</button>
+                    <button class="btn btn-secondary" style="width: 100%; max-width: 200px;" id="nfcQuickBindBtn">钥匙扣快速绑定</button>
                 </div>
             </div>
         </div>
@@ -776,9 +793,9 @@
             <h3 class="section-title">⏳ 恋爱计时</h3>
             <div class="section-content">
                 <div class="timer-tabs">
-                    <div class="timer-tab active" onclick="switchTimer('loveDays')">恋爱天数</div>
-                    <div class="timer-tab" onclick="switchTimer('nextMeet')">下次见面</div>
-                    <div class="timer-tab" onclick="switchTimer('bindDay')">绑定纪念日</div>
+                    <div class="timer-tab active" data-timer="loveDays">恋爱天数</div>
+                    <div class="timer-tab" data-timer="nextMeet">下次见面</div>
+                    <div class="timer-tab" data-timer="bindDay">绑定纪念日</div>
                 </div>
                 <div class="timer-display">
                     <div class="timer-unit">
@@ -799,9 +816,9 @@
                     </div>
                 </div>
                 <div class="timer-actions">
-                    <button class="btn" style="width: 100%; max-width: 200px; margin-bottom: 10px;" onclick="setLoveStartDate()">设置恋爱起始日</button>
-                    <button class="btn" style="width: 100%; max-width: 200px; margin-bottom: 10px;" onclick="setNextMeetDate()">设置下次见面日</button>
-                    <button class="btn btn-secondary" style="width: 100%; max-width: 200px;" onclick="nfcCheckIn()">🔑 钥匙扣打卡</button>
+                    <button class="btn" style="width: 100%; max-width: 200px; margin-bottom: 10px;" id="setLoveStartDateBtn">设置恋爱起始日</button>
+                    <button class="btn" style="width: 100%; max-width: 200px; margin-bottom: 10px;" id="setNextMeetDateBtn">设置下次见面日</button>
+                    <button class="btn btn-secondary" style="width: 100%; max-width: 200px;" id="nfcCheckInBtn">🔑 钥匙扣打卡</button>
                 </div>
             </div>
         </div>
@@ -811,11 +828,11 @@
             <h3 class="section-title">📝 情侣日记</h3>
             <div class="section-content">
                 <div class="diary-filters">
-                    <select class="diary-filter" id="diaryTypeSelect" onchange="renderDiaries()">
+                    <select class="diary-filter" id="diaryTypeSelect">
                         <option value="couple">情侣日记</option>
                         <option value="personal">个人日记</option>
                     </select>
-                    <select class="diary-filter" id="diaryCategorySelect" onchange="renderDiaries()">
+                    <select class="diary-filter" id="diaryCategorySelect">
                         <option value="all">所有分类</option>
                         <option value="约会">约会</option>
                         <option value="礼物">礼物</option>
@@ -826,15 +843,15 @@
                 </div>
                 <div class="diary-editor">
                     <div class="diary-category">
-                        <div class="category-tag active" onclick="selectCategory('约会')">约会</div>
-                        <div class="category-tag" onclick="selectCategory('礼物')">礼物</div>
-                        <div class="category-tag" onclick="selectCategory('旅行')">旅行</div>
-                        <div class="category-tag" onclick="selectCategory('日常')">日常</div>
-                        <div class="category-tag" onclick="selectCategory('感悟')">感悟</div>
+                        <div class="category-tag active" data-category="约会">约会</div>
+                        <div class="category-tag" data-category="礼物">礼物</div>
+                        <div class="category-tag" data-category="旅行">旅行</div>
+                        <div class="category-tag" data-category="日常">日常</div>
+                        <div class="category-tag" data-category="感悟">感悟</div>
                     </div>
-                    <textarea class="diary-textarea" id="diaryContent" placeholder="记录你们的美好瞬间..." oninput="countWords()"></textarea>
+                    <textarea class="diary-textarea" id="diaryContent" placeholder="记录你们的美好瞬间..." maxlength="500"></textarea>
                     <div class="diary-wordcount">字数：<span id="wordCount">0</span>/500</div>
-                    <button class="btn" onclick="saveDiary()">保存日记</button>
+                    <button class="btn" id="saveDiaryBtn">保存日记</button>
                 </div>
                 <div class="diary-list" id="diaryList">
                     <div style="text-align: center; color: var(--text-light); padding: 20px;">
@@ -851,7 +868,7 @@
                 <div style="display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap;">
                     <input type="text" class="form-control" id="anniversaryName" placeholder="纪念日名称（如：第一次约会）" style="flex: 1; min-width: 150px;">
                     <input type="date" class="form-control" id="anniversaryDate" style="min-width: 150px;">
-                    <button class="btn" style="width: 100%; max-width: 100px;" onclick="saveAnniversary()">添加</button>
+                    <button class="btn" style="width: 100%; max-width: 100px;" id="saveAnniversaryBtn">添加</button>
                 </div>
                 <div class="anniversary-list" id="anniversaryList">
                     <!-- 动态生成纪念日卡片 -->
@@ -865,7 +882,7 @@
             <div class="section-content">
                 <div class="goal-input">
                     <textarea class="goal-textarea" id="goalContent" placeholder="输入共同目标（如：一起存钱旅行）"></textarea>
-                    <button class="btn" style="width: 100%; max-width: 100px;" onclick="addCoupleGoal()">添加</button>
+                    <button class="btn" style="width: 100%; max-width: 100px;" id="addCoupleGoalBtn">添加</button>
                 </div>
                 <div class="goal-list" id="goalList">
                     <div style="text-align: center; color: var(--text-light); padding: 20px;">
@@ -879,8 +896,8 @@
         <div class="section">
             <h3 class="section-title">📊 爱情数据管理</h3>
             <div class="section-content" style="text-align: center;">
-                <button class="btn btn-secondary" style="width: 100%; max-width: 250px; margin-bottom: 10px;" onclick="generateLoveReport()">生成爱情成长报告</button>
-                <button class="btn" style="width: 100%; max-width: 250px;" onclick="alert('纪念册已导出！')">导出爱情纪念册</button>
+                <button class="btn btn-secondary" style="width: 100%; max-width: 250px; margin-bottom: 10px;" id="generateLoveReportBtn">生成爱情成长报告</button>
+                <button class="btn" style="width: 100%; max-width: 250px;" id="exportAlbumBtn">导出爱情纪念册</button>
             </div>
         </div>
     </div>
@@ -894,8 +911,8 @@
                 <input type="text" class="form-control" id="taBindNickname" placeholder="输入TA的情侣昵称">
             </div>
             <div class="modal-actions">
-                <button class="btn" style="width: 45%;" onclick="bindCoupleAccount()">绑定</button>
-                <button class="btn btn-secondary" style="width: 45%;" onclick="closeBindModal()">取消</button>
+                <button class="btn" style="width: 45%;" id="bindCoupleAccountBtn">绑定</button>
+                <button class="btn btn-secondary" style="width: 45%;" id="closeBindModalBtn">取消</button>
             </div>
         </div>
     </div>
@@ -905,10 +922,10 @@
         <div class="modal-content">
             <h3 class="modal-title">更换头像</h3>
             <img id="avatarPreview" class="avatar-preview" />
-            <input type="file" id="avatarFile" class="form-control" accept="image/*" onchange="previewAvatar()">
+            <input type="file" id="avatarFile" class="form-control" accept="image/*">
             <div class="modal-actions">
-                <button class="btn" style="width: 45%;" onclick="saveAvatar()">保存</button>
-                <button class="btn btn-secondary" style="width: 45%;" onclick="closeAvatarModal()">取消</button>
+                <button class="btn" style="width: 45%;" id="saveAvatarBtn">保存</button>
+                <button class="btn btn-secondary" style="width: 45%;" id="closeAvatarModalBtn">取消</button>
             </div>
         </div>
     </div>
@@ -945,7 +962,7 @@
                     达成了 <span id="reportMilestoneCountText">0</span> 个爱情里程碑。
                     愿你们的爱情细水长流，永远甜蜜～
                 </div>
-                <button class="btn" onclick="downloadLoveReport()">下载报告（PDF）</button>
+                <button class="btn" id="downloadLoveReportBtn">下载报告（PDF）</button>
             </div>
         </div>
     </div>
@@ -957,14 +974,14 @@
                 <div class="milestone-icon" id="milestoneIcon">🎉</div>
                 <div class="milestone-title" id="milestoneTitle">爱情里程碑达成！</div>
                 <div class="milestone-desc" id="milestoneDesc">你们已经在一起30天啦，继续甜蜜下去吧～</div>
-                <button class="btn" style="background: white; color: var(--primary);" onclick="saveMilestoneCard()">保存纪念卡片</button>
+                <button class="btn" style="background: white; color: var(--primary);" id="saveMilestoneCardBtn">保存纪念卡片</button>
             </div>
         </div>
     </div>
 
     <!-- 音乐播放器 -->
     <div class="music-player">
-        <span class="music-icon" id="musicToggle" onclick="toggleMusic()">🎵</span>
+        <span class="music-icon" id="musicToggle">🎵</span>
         <span class="music-info">爱情主题曲</span>
         <audio id="musicPlayer" loop>
             <source src="https://cdn.freesound.org/previews/501/501680_10226512-lq.mp3" type="audio/mpeg">
@@ -973,7 +990,7 @@
     </div>
 
     <script>
-        // 全局变量初始化（强制深拷贝，彻底避免引用问题）
+        // 全局变量初始化（确保所有变量有默认值）
         const defaultCoupleData = {
             myNickname: '',
             taNickname: '',
@@ -1007,16 +1024,20 @@
         let activeAvatarType = 'me';
         let timerInterval = null;
 
-        // -------------------- 页面加载完成后初始化（100%稳定触发） --------------------
+        // -------------------- 页面加载完成后初始化（确保DOM完全加载） --------------------
         document.addEventListener('DOMContentLoaded', function() {
+            console.log('页面加载完成，初始化功能...');
             try {
-                // 初始化核心功能
+                // 1. 绑定所有按钮事件（修复核心问题：使用DOM原生事件绑定，避免函数未定义）
+                bindAllEvents();
+                
+                // 2. 初始化基础功能
                 renderAccountList();
                 checkNFCQuickBind();
                 countWords();
                 initDarkMode();
 
-                // 恢复上次登录（可选功能，不影响核心登录）
+                // 3. 恢复上次登录（可选功能）
                 const lastLoginUser = localStorage.getItem('lastLoginUser');
                 if (lastLoginUser) {
                     setTimeout(() => {
@@ -1026,13 +1047,70 @@
                         }
                     }, 500);
                 }
+
+                console.log('初始化完成，登录功能已就绪');
             } catch (e) {
                 console.error('页面初始化异常：', e);
-                alert('页面加载成功，部分功能可能受限，请刷新重试');
+                alert('页面加载成功，若功能异常请刷新重试');
             }
         });
 
-        // -------------------- 账户核心功能（经过10+轮登录/注册测试，零报错） --------------------
+        // -------------------- 核心修复：统一绑定所有事件（避免事件丢失） --------------------
+        function bindAllEvents() {
+            // 登录/注册相关
+            document.getElementById('loginBtn').addEventListener('click', loginAccount);
+            document.getElementById('createBtn').addEventListener('click', createAccount);
+            document.getElementById('nfcBindBtn').addEventListener('click', nfcQuickBind);
+            document.getElementById('logoutBtn').addEventListener('click', logoutAccount);
+
+            // 情侣绑定相关
+            document.getElementById('bindBtn').addEventListener('click', openBindModal);
+            document.getElementById('nfcQuickBindBtn').addEventListener('click', nfcQuickBind);
+            document.getElementById('bindCoupleAccountBtn').addEventListener('click', bindCoupleAccount);
+            document.getElementById('closeBindModalBtn').addEventListener('click', closeBindModal);
+
+            // 头像相关
+            document.getElementById('myAvatarWrapper').addEventListener('click', () => openAvatarModal('me'));
+            document.getElementById('taAvatarWrapper').addEventListener('click', () => openAvatarModal('ta'));
+            document.getElementById('avatarFile').addEventListener('change', previewAvatar);
+            document.getElementById('saveAvatarBtn').addEventListener('click', saveAvatar);
+            document.getElementById('closeAvatarModalBtn').addEventListener('click', closeAvatarModal);
+
+            // 计时模块相关
+            document.querySelectorAll('.timer-tab').forEach(tab => {
+                tab.addEventListener('click', () => switchTimer(tab.dataset.timer));
+            });
+            document.getElementById('setLoveStartDateBtn').addEventListener('click', setLoveStartDate);
+            document.getElementById('setNextMeetDateBtn').addEventListener('click', setNextMeetDate);
+            document.getElementById('nfcCheckInBtn').addEventListener('click', nfcCheckIn);
+
+            // 日记模块相关
+            document.querySelectorAll('.category-tag').forEach(tag => {
+                tag.addEventListener('click', () => selectCategory(tag.dataset.category));
+            });
+            document.getElementById('diaryContent').addEventListener('input', countWords);
+            document.getElementById('diaryTypeSelect').addEventListener('change', renderDiaries);
+            document.getElementById('diaryCategorySelect').addEventListener('change', renderDiaries);
+            document.getElementById('saveDiaryBtn').addEventListener('click', saveDiary);
+
+            // 纪念日模块相关
+            document.getElementById('saveAnniversaryBtn').addEventListener('click', saveAnniversary);
+
+            // 共同目标模块相关
+            document.getElementById('addCoupleGoalBtn').addEventListener('click', addCoupleGoal);
+
+            // 数据管理相关
+            document.getElementById('generateLoveReportBtn').addEventListener('click', generateLoveReport);
+            document.getElementById('exportAlbumBtn').addEventListener('click', () => alert('纪念册已导出！'));
+            document.getElementById('downloadLoveReportBtn').addEventListener('click', downloadLoveReport);
+            document.getElementById('saveMilestoneCardBtn').addEventListener('click', saveMilestoneCard);
+
+            // 其他功能
+            document.getElementById('themeToggle').addEventListener('click', toggleDarkMode);
+            document.getElementById('musicToggle').addEventListener('click', toggleMusic);
+        }
+
+        // -------------------- 账户核心功能（修复登录无响应问题） --------------------
         /**
          * 获取所有账户（容错处理：防止本地存储损坏）
          * @returns {Array} 账户列表
@@ -1043,24 +1121,22 @@
                 if (!accountsStr) return [];
                 
                 const accounts = JSON.parse(accountsStr);
-                // 验证数据格式，无效数据直接重置
-                if (!Array.isArray(accounts)) throw new Error('账户数据不是数组');
+                if (!Array.isArray(accounts)) throw new Error('账户数据格式错误');
                 
-                // 格式化账户数据，确保每个账户字段完整
                 return accounts.map(acc => ({
                     userName: acc.userName?.trim() || '',
                     password: acc.password || '',
                     coupleData: acc.coupleData ? JSON.parse(JSON.stringify(acc.coupleData)) : JSON.parse(JSON.stringify(defaultCoupleData))
-                })).filter(acc => acc.userName && acc.password); // 过滤无效账户（空用户名/密码）
+                })).filter(acc => acc.userName && acc.password);
             } catch (e) {
-                console.error('读取账户失败，重置本地存储：', e);
+                console.error('读取账户失败：', e);
                 localStorage.removeItem('coupleAccounts');
                 return [];
             }
         }
 
         /**
-         * 创建账户（严格校验，防止重复/无效数据）
+         * 创建账户（修复输入校验和数据保存）
          */
         function createAccount() {
             try {
@@ -1068,7 +1144,7 @@
                 const userPwd = document.getElementById('userPwd').value.trim();
                 const nickname = document.getElementById('coupleNickname').value.trim();
 
-                // 1. 输入校验
+                // 输入校验（明确提示，避免用户困惑）
                 if (!userName) { alert('用户名不能为空！'); return; }
                 if (userName.length < 2 || userName.length > 20) { alert('用户名长度必须在2-20个字符之间！'); return; }
                 if (!/^[a-zA-Z0-9_]{2,20}$/.test(userName)) { alert('用户名只能包含字母、数字和下划线！'); return; }
@@ -1077,26 +1153,26 @@
                 if (!nickname) { alert('情侣昵称不能为空！'); return; }
                 if (nickname.length > 10) { alert('情侣昵称不能超过10个字符！'); return; }
 
-                // 2. 检查用户名重复
+                // 检查用户名重复
                 const accounts = getAccounts();
                 if (accounts.some(acc => acc.userName === userName)) {
                     alert('该用户名已被占用，请更换！');
                     return;
                 }
 
-                // 3. 生成唯一6位邀请码
+                // 生成唯一6位邀请码
                 let bindCode;
                 do {
                     bindCode = Math.floor(100000 + Math.random() * 900000).toString();
                 } while (accounts.some(acc => acc.coupleData.bindCode === bindCode));
 
-                // 4. 初始化情侣数据
+                // 初始化情侣数据
                 const initCoupleData = JSON.parse(JSON.stringify(defaultCoupleData));
                 initCoupleData.myNickname = nickname;
                 initCoupleData.bindCode = bindCode;
                 initCoupleData.anniversaries.find(a => a.id === 'loveStart').date = new Date().toISOString().split('T')[0];
 
-                // 5. 保存新账户
+                // 保存新账户
                 accounts.push({
                     userName: userName,
                     password: userPwd,
@@ -1104,8 +1180,8 @@
                 });
                 localStorage.setItem('coupleAccounts', JSON.stringify(accounts));
 
-                // 6. 反馈结果
-                alert(`账户创建成功！\n用户名：${userName}\n情侣邀请码：${bindCode}\n请分享邀请码给TA绑定～`);
+                // 反馈结果（明确提示，让用户知道成功）
+                alert(`✅ 账户创建成功！\n用户名：${userName}\n情侣邀请码：${bindCode}\n请分享邀请码给TA绑定～`);
                 renderAccountList();
                 clearAuthInputs();
             } catch (e) {
@@ -1115,35 +1191,47 @@
         }
 
         /**
-         * 登录账户（修复所有可能的空指针错误）
+         * 登录账户（修复核心无响应问题：确保逻辑完整，反馈明确）
          */
         function loginAccount() {
+            console.log('登录按钮被点击，开始处理登录...');
             try {
                 const userName = document.getElementById('userName').value.trim();
                 const userPwd = document.getElementById('userPwd').value.trim();
 
-                // 1. 输入校验
-                if (!userName || !userPwd) { alert('用户名和密码不能为空！'); return; }
+                // 1. 输入校验（避免空值提交）
+                if (!userName) { alert('用户名不能为空！'); return; }
+                if (!userPwd) { alert('密码不能为空！'); return; }
+
+                console.log(`尝试登录：用户名=${userName}`);
 
                 // 2. 查找账户
                 const accounts = getAccounts();
                 const account = accounts.find(acc => acc.userName === userName && acc.password === userPwd);
 
                 // 3. 登录验证
-                if (!account) { alert('用户名或密码错误！'); return; }
+                if (!account) {
+                    console.log('登录失败：用户名或密码错误');
+                    alert('用户名或密码错误！');
+                    return;
+                }
 
                 // 4. 更新全局状态
                 currentUser = userName;
                 coupleData = JSON.parse(JSON.stringify(account.coupleData));
                 localStorage.setItem('lastLoginUser', userName); // 记录上次登录
 
-                // 5. 切换界面
+                console.log(`登录成功：${userName}`);
+
+                // 5. 切换界面（确保DOM操作成功）
                 document.getElementById('authPanel').style.display = 'none';
                 document.getElementById('mainContent').style.display = 'block';
 
                 // 6. 初始化主界面
                 initCoupleInterface();
                 clearAuthInputs();
+
+                alert(`🎉 登录成功！欢迎回来，${coupleData.myNickname || userName}～`);
             } catch (e) {
                 console.error('登录失败：', e);
                 alert('登录失败，请重试！');
@@ -1151,29 +1239,31 @@
         }
 
         /**
-         * 退出登录（清理资源，防止内存泄漏）
+         * 退出登录（清理资源）
          */
         function logoutAccount() {
             try {
-                // 1. 清除计时器
+                // 清除计时器
                 if (timerInterval) {
                     clearInterval(timerInterval);
                     timerInterval = null;
                 }
 
-                // 2. 暂停音乐
+                // 暂停音乐
                 const musicPlayer = document.getElementById('musicPlayer');
                 if (musicPlayer && !musicPlayer.paused) {
                     musicPlayer.pause();
                 }
 
-                // 3. 重置状态
+                // 重置状态
                 currentUser = null;
                 coupleData = JSON.parse(JSON.stringify(defaultCoupleData));
 
-                // 4. 切换界面
+                // 切换界面
                 document.getElementById('mainContent').style.display = 'none';
                 document.getElementById('authPanel').style.display = 'block';
+
+                alert('👋 退出成功！期待下次见面～');
             } catch (e) {
                 console.error('退出失败：', e);
                 alert('退出失败，请刷新页面！');
@@ -1181,7 +1271,7 @@
         }
 
         /**
-         * 渲染账户列表（修复空列表显示问题）
+         * 渲染账户列表（确保快速登录可用）
          */
         function renderAccountList() {
             try {
@@ -1203,11 +1293,16 @@
                             <span style="color: ${isBound ? '#22c55e' : '#f59e0b'}">
                                 ${isBound ? '已绑定情侣' : '未绑定'}
                             </span>
-                            <button class="btn" style="padding: 4px 8px; font-size: 12px; width: auto;" onclick="loginWithAccount('${account.userName}')">快速登录</button>
+                            <button class="btn quick-login-btn" style="padding: 4px 8px; font-size: 12px; width: auto;" data-username="${account.userName}">快速登录</button>
                         </div>
                     `;
                 });
                 accountListEl.innerHTML = html;
+
+                // 绑定快速登录事件
+                document.querySelectorAll('.quick-login-btn').forEach(btn => {
+                    btn.addEventListener('click', () => loginWithAccount(btn.dataset.username));
+                });
             } catch (e) {
                 console.error('渲染账户列表失败：', e);
                 document.getElementById('accountList').innerHTML = '<div class="account-item">加载账户失败</div>';
@@ -1228,7 +1323,7 @@
                     return;
                 }
 
-                // 直接登录（无需密码，快速登录功能）
+                // 直接登录
                 currentUser = userName;
                 coupleData = JSON.parse(JSON.stringify(account.coupleData));
                 localStorage.setItem('lastLoginUser', userName);
@@ -1236,6 +1331,8 @@
                 document.getElementById('authPanel').style.display = 'none';
                 document.getElementById('mainContent').style.display = 'block';
                 initCoupleInterface();
+
+                alert(`🎉 快速登录成功！欢迎回来，${coupleData.myNickname || userName}～`);
             } catch (e) {
                 console.error('快速登录失败：', e);
                 alert('快速登录失败，请重试！');
@@ -1243,7 +1340,7 @@
         }
 
         /**
-         * 保存情侣数据（确保数据同步到本地存储）
+         * 保存情侣数据（确保数据同步）
          */
         function saveCoupleData() {
             if (!currentUser) return;
@@ -1257,7 +1354,6 @@
                 }
             } catch (e) {
                 console.error('保存数据失败：', e);
-                // 静默失败，不影响用户操作，下次操作会重新尝试
             }
         }
 
@@ -1270,34 +1366,34 @@
             document.getElementById('coupleNickname').value = '';
         }
 
-        // -------------------- 主界面初始化（确保所有功能正常加载） --------------------
+        // -------------------- 其他功能修复（确保整体可用） --------------------
         function initCoupleInterface() {
             try {
-                // 1. 更新情侣信息
+                // 更新情侣信息
                 document.getElementById('myNicknameText').textContent = coupleData.myNickname || '未设置';
                 document.getElementById('taNicknameText').textContent = coupleData.isBound ? (coupleData.taNickname || 'TA') : '未绑定';
 
-                // 2. 更新绑定按钮状态
+                // 更新绑定按钮状态
                 const bindBtn = document.getElementById('bindBtn');
                 bindBtn.textContent = coupleData.isBound ? '已绑定情侣' : '绑定情侣';
                 bindBtn.disabled = coupleData.isBound;
 
-                // 3. 更新头像
+                // 更新头像
                 updateAvatars();
 
-                // 4. 初始化计时模块
+                // 初始化计时模块
                 if (timerInterval) clearInterval(timerInterval);
                 initTimer();
 
-                // 5. 渲染功能模块
+                // 渲染功能模块
                 renderDiaries();
                 renderAnniversaries();
                 renderCoupleGoals();
 
-                // 6. 初始化音乐
+                // 初始化音乐
                 initMusic();
 
-                // 7. 新手引导（仅显示一次）
+                // 新手引导（仅显示一次）
                 if (!coupleData.hasShownGuide) {
                     setTimeout(() => {
                         alert(`❤️ 新手引导\n1. 先设置「恋爱起始日」记录陪伴时长\n2. 发布「情侣日记」和TA共同记录\n3. 添加「重要纪念日」避免忘记惊喜\n4. 用情侣钥匙扣NFC快速打卡/互动`);
@@ -1306,29 +1402,22 @@
                     }, 1000);
                 }
 
-                // 8. 检查里程碑
+                // 检查里程碑
                 checkMilestones();
             } catch (e) {
                 console.error('初始化主界面失败：', e);
-                alert('界面加载完成，部分功能可能受限，请刷新重试');
             }
         }
 
-        // -------------------- NFC功能（兼容真实硬件，异常处理完善） --------------------
-        /**
-         * 检查设备是否支持NFC
-         */
+        // NFC功能（保持兼容）
         function checkNFCQuickBind() {
             if (typeof NDEFReader === 'undefined') {
-                const nfcBtn = document.querySelector('.nfc-bind-btn');
+                const nfcBtn = document.getElementById('nfcBindBtn');
                 nfcBtn.title = '你的浏览器/设备不支持NFC功能';
                 nfcBtn.style.opacity = '0.7';
             }
         }
 
-        /**
-         * NFC快速绑定
-         */
         function nfcQuickBind() {
             if (typeof NDEFReader === 'undefined') {
                 alert('你的浏览器/设备不支持NFC功能，请使用Chrome浏览器+HTTPS环境访问！');
@@ -1351,7 +1440,6 @@
                                     const coupleId = params.get('couple_id');
                                     const bindCode = params.get('bind_code');
 
-                                    // 验证数据有效性
                                     if (!coupleId || !bindCode || bindCode.length !== 6) {
                                         alert('钥匙扣数据格式错误，请重新写入邀请码！');
                                         reader.stopScanning();
@@ -1360,14 +1448,12 @@
 
                                     alert(`检测到情侣钥匙扣：${coupleId}\n自动填充邀请码：${bindCode}`);
 
-                                    // 检查是否已绑定
                                     if (coupleData.isBound) {
                                         alert('你已绑定情侣，无需重复绑定！');
                                         reader.stopScanning();
                                         return;
                                     }
 
-                                    // 填充邀请码并打开绑定模态框
                                     document.getElementById('bindCode').value = bindCode;
                                     openBindModal();
                                     reader.stopScanning();
@@ -1388,9 +1474,6 @@
             }
         }
 
-        /**
-         * NFC打卡
-         */
         function nfcCheckIn() {
             if (typeof NDEFReader === 'undefined') {
                 alert('你的浏览器/设备不支持NFC功能，请使用Chrome浏览器+HTTPS环境访问！');
@@ -1419,7 +1502,6 @@
                                     }
 
                                     const today = new Date().toLocaleDateString();
-                                    // 检查今日是否已打卡
                                     const hasCheckedIn = coupleData.diaries.some(d => 
                                         d.type === 'couple' && d.category === '约会' && d.date === today && d.content.includes('钥匙扣打卡成功')
                                     );
@@ -1427,12 +1509,10 @@
                                     if (hasCheckedIn) {
                                         alert('今日已打卡成功！祝你们甜蜜一整天～');
                                     } else {
-                                        // 计算恋爱天数
                                         const loveDays = coupleData.loveStartDate 
                                             ? Math.floor((new Date() - new Date(coupleData.loveStartDate)) / (1000 * 60 * 60 * 24))
                                             : 0;
 
-                                        // 新增打卡日记
                                         const checkInDiary = {
                                             id: Date.now(),
                                             type: 'couple',
@@ -1451,7 +1531,6 @@
 
                                         alert('打卡成功！已自动记录到情侣日记～');
                                         
-                                        // 通知对方
                                         if (coupleData.isBound) {
                                             alert(`已通知${coupleData.taNickname || 'TA'}：你今日已打卡见面～`);
                                         }
@@ -1475,7 +1554,7 @@
             }
         }
 
-        // -------------------- 情侣绑定功能（修复数据同步问题） --------------------
+        // 情侣绑定功能
         function openBindModal() {
             document.getElementById('bindModal').style.display = 'flex';
         }
@@ -1491,12 +1570,10 @@
                 const bindCode = document.getElementById('bindCode').value.trim();
                 const taNickname = document.getElementById('taBindNickname').value.trim();
 
-                // 输入校验
                 if (!bindCode || bindCode.length !== 6) { alert('请输入6位邀请码！'); return; }
                 if (!taNickname) { alert('请输入TA的情侣昵称！'); return; }
                 if (taNickname.length > 10) { alert('情侣昵称不能超过10个字符！'); return; }
 
-                // 查找对方账户
                 const accounts = getAccounts();
                 const taAccountIndex = accounts.findIndex(acc => 
                     acc.coupleData?.bindCode === bindCode && !acc.coupleData?.isBound
@@ -1511,7 +1588,6 @@
                 coupleData.isBound = true;
                 coupleData.taNickname = taNickname;
 
-                // 更新对方账户
                 accounts[taAccountIndex].coupleData.isBound = true;
                 accounts[taAccountIndex].coupleData.taNickname = coupleData.myNickname || '我';
                 accounts[taAccountIndex].coupleData.anniversaries = JSON.parse(JSON.stringify(coupleData.anniversaries));
@@ -1521,8 +1597,7 @@
                 localStorage.setItem('coupleAccounts', JSON.stringify(accounts));
                 saveCoupleData();
 
-                // 反馈结果
-                alert(`绑定成功！已和${taNickname}成为情侣～`);
+                alert(`✅ 绑定成功！已和${taNickname}成为情侣～`);
                 closeBindModal();
                 initCoupleInterface();
 
@@ -1538,7 +1613,7 @@
             }
         }
 
-        // -------------------- 头像功能（修复图片预览/保存问题） --------------------
+        // 头像功能
         function openAvatarModal(type) {
             activeAvatarType = type;
             const previewImg = document.getElementById('avatarPreview');
@@ -1591,7 +1666,6 @@
                     return;
                 }
 
-                // 保存头像（base64格式，不占用服务器空间）
                 coupleData.avatars[activeAvatarType] = previewImg.src;
                 saveCoupleData();
                 updateAvatars();
@@ -1638,11 +1712,11 @@
             }
         }
 
-        // -------------------- 计时模块（修复日期计算错误） --------------------
+        // 计时模块
         function switchTimer(type) {
             // 更新激活状态
             document.querySelectorAll('.timer-tab').forEach(tab => tab.classList.remove('active'));
-            const targetTab = document.querySelector(`.timer-tab[onclick="switchTimer('${type}')"]`);
+            const targetTab = document.querySelector(`.timer-tab[data-timer="${type}"]`);
             if (targetTab) targetTab.classList.add('active');
             activeTimer = type;
 
@@ -1665,72 +1739,4 @@
                         startDate = coupleData.timers.bindDay.startDate;
                     } else {
                         // 无日期时显示00
-                        document.getElementById('timerDays').textContent = '00';
-                        document.getElementById('timerHours').textContent = '00';
-                        document.getElementById('timerMins').textContent = '00';
-                        document.getElementById('timerSecs').textContent = '00';
-                        return;
-                    }
-                }
-
-                // 验证日期格式
-                const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-                if (!dateRegex.test(startDate)) {
-                    alert('日期格式错误，请重新设置');
-                    return;
-                }
-
-                const targetDate = new Date(startDate);
-                if (isNaN(targetDate.getTime())) {
-                    alert('日期无效，请重新设置');
-                    return;
-                }
-
-                // 更新计时器
-                function updateTimer() {
-                    const now = new Date().getTime();
-                    let diff;
-
-                    if (activeTimer === 'nextMeet') {
-                        // 下次见面：目标时间 - 当前时间
-                        diff = targetDate.getTime() - now;
-                        // 日期已过，显示0
-                        if (diff < 0) diff = 0;
-                    } else {
-                        // 恋爱天数/绑定纪念日：当前时间 - 目标时间
-                        diff = now - targetDate.getTime();
-                    }
-
-                    // 计算时分秒
-                    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-                    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                    const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-                    const secs = Math.floor((diff % (1000 * 60)) / 1000);
-
-                    // 补零显示
-                    document.getElementById('timerDays').textContent = days.toString().padStart(2, '0');
-                    document.getElementById('timerHours').textContent = hours.toString().padStart(2, '0');
-                    document.getElementById('timerMins').textContent = mins.toString().padStart(2, '0');
-                    document.getElementById('timerSecs').textContent = secs.toString().padStart(2, '0');
-                }
-
-                // 立即更新一次
-                updateTimer();
-                // 启动定时器（每秒更新）
-                timerInterval = setInterval(updateTimer, 1000);
-            } catch (e) {
-                console.error('初始化计时器失败：', e);
-                alert('计时器加载失败，请重试');
-            }
-        }
-
-        function setLoveStartDate() {
-            try {
-                const defaultDate = coupleData.loveStartDate || new Date().toISOString().split('T')[0];
-                const dateStr = prompt('请输入恋爱起始日（格式：YYYY-MM-DD）', defaultDate);
-                if (!dateStr) return;
-
-                // 验证日期
-                const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-                if (!dateRegex.test(dateStr)) {
-                    alert('日期格式
+                        document.getElementById('timerDays
