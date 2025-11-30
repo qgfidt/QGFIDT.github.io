@@ -188,24 +188,6 @@
             color: var(--text-light);
             font-size: 14px;
         }
-        .account-list {
-            margin-top: 20px;
-            padding-top: 20px;
-            border-top: 1px solid var(--border-light);
-        }
-        .account-item {
-            padding: 8px 0;
-            color: var(--primary);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 10px;
-            font-size: 15px;
-        }
-        .account-item button {
-            padding: 4px 12px;
-            font-size: 13px;
-        }
         .container {
             max-width: 800px;
             width: 100%;
@@ -828,7 +810,7 @@
     <div class="love-decoration" style="bottom: 15%; left: 10%;">❤️</div>
     <div class="love-decoration" style="bottom: 25%; right: 12%;">❤️</div>
 
-    <!-- 登录/注册面板 -->
+    <!-- 登录/注册面板（已删除快捷登录列表） -->
     <div class="auth-panel" id="authPanel">
         <h2 class="panel-title">❤️ 情侣时光</h2>
         <p class="panel-subtitle">钥匙扣专属 · 记录你们的每一刻美好</p>
@@ -843,20 +825,12 @@
             <input type="text" id="coupleNickname" class="form-control" placeholder="你的情侣昵称（如：宝宝）" autocomplete="off">
         </div>
         
-        <!-- 直接绑定 onclick 为全局函数，避免事件丢失 -->
+        <!-- 登录/注册按钮 -->
         <button onclick="window.loginAccount()" class="btn">登录账户</button>
         <button onclick="window.createAccount()" class="btn btn-secondary">创建账户</button>
         
         <div class="nfc-bind-btn" onclick="window.nfcQuickBind()">
             <span>🔑 用情侣钥匙扣快速绑定</span>
-        </div>
-        
-        <div class="divider">
-            <span>已创建账户</span>
-        </div>
-        
-        <div class="account-list" id="accountList">
-            <div class="account-item">暂无已创建账户</div>
         </div>
     </div>
 
@@ -1151,17 +1125,16 @@
             };
         }
 
-        // 页面加载初始化（确保所有函数加载完成后执行）
+        // 页面加载初始化
         window.addEventListener('DOMContentLoaded', () => {
             // 初始化默认数据
             window.coupleData = initDefaultCoupleData();
             generateLoveDecorations();
             checkDarkMode();
-            renderAccountList();
             checkNFCQuickBind();
             initMusic();
 
-            // 手动绑定按钮事件（双重保障，避免onclick失效）
+            // 手动绑定按钮事件（双重保障）
             document.querySelector('.btn:not(.btn-secondary)').addEventListener('click', window.loginAccount);
             document.querySelector('.btn.btn-secondary').addEventListener('click', window.createAccount);
         });
@@ -1198,7 +1171,7 @@
             }
         }
 
-        // 核心修复：登录函数（全局暴露+极简逻辑+实时反馈）
+        // 登录函数（核心修复：纯账号密码登录）
         window.loginAccount = function() {
             console.log('=== 登录按钮触发 ===');
             const userNameEl = document.getElementById('userName');
@@ -1235,12 +1208,12 @@
                 window.currentUser = userName;
                 window.coupleData = account.coupleData;
 
-                // 4. 界面切换（强制显示主内容，隐藏登录面板）
+                // 4. 界面切换
                 document.getElementById('authPanel').style.display = 'none';
                 const mainContent = document.getElementById('mainContent');
                 mainContent.style.display = 'block';
                 mainContent.style.opacity = '0';
-                setTimeout(() => mainContent.style.opacity = '1', 100); // 简单过渡
+                setTimeout(() => mainContent.style.opacity = '1', 100);
 
                 // 5. 初始化界面
                 initCoupleInterface();
@@ -1260,7 +1233,7 @@
             }
         }
 
-        // 核心修复：创建账户函数（全局暴露+极简逻辑+实时反馈）
+        // 创建账户函数
         window.createAccount = function() {
             console.log('=== 创建账户按钮触发 ===');
             const userNameEl = document.getElementById('userName');
@@ -1313,11 +1286,8 @@
                 });
                 localStorage.setItem('coupleAccounts', JSON.stringify(accounts));
 
-                // 5. 反馈+刷新账户列表
+                // 5. 反馈+清空输入框
                 alert(`账户创建成功！\n你的情侣邀请码：${bindCode}\n请分享给TA绑定～`);
-                renderAccountList();
-
-                // 6. 清空输入框
                 userNameEl.value = '';
                 userPwdEl.value = '';
                 coupleNicknameEl.value = '';
@@ -1386,46 +1356,6 @@
             alert(`绑定成功！现在可以和${taNickname}一起记录爱情啦～`);
             closeCoupleBindModal();
             initCoupleInterface();
-        }
-
-        // 渲染账户列表
-        function renderAccountList() {
-            const accountListEl = document.getElementById('accountList');
-            const accounts = window.getAccounts();
-
-            if (accounts.length === 0) {
-                accountListEl.innerHTML = '<div class="account-item">暂无已创建账户</div>';
-                return;
-            }
-
-            let html = '';
-            accounts.forEach(account => {
-                const isBound = account.coupleData.isBound;
-                html += `
-                    <div class="account-item">
-                        <span>${account.userName}</span>
-                        <span style="color: var(--text-light);">|</span>
-                        <span style="color: ${isBound ? '#22c55e' : '#f59e0b'}">
-                            ${isBound ? '已绑定情侣' : '未绑定'}
-                        </span>
-                        <button class="btn btn-outline" onclick="window.loginWithAccount('${account.userName}')">快速登录</button>
-                    </div>
-                `;
-            });
-            accountListEl.innerHTML = html;
-        }
-
-        // 快速登录
-        window.loginWithAccount = function(userName) {
-            const accounts = window.getAccounts();
-            const account = accounts.find(a => a.userName === userName);
-            if (account) {
-                window.currentUser = userName;
-                window.coupleData = account.coupleData;
-                document.getElementById('authPanel').style.display = 'none';
-                document.getElementById('mainContent').style.display = 'block';
-                initCoupleInterface();
-            }
         }
 
         // 初始化情侣界面
@@ -1637,7 +1567,7 @@
             document.getElementById('milestoneModal').style.display = 'flex';
         }
 
-        // 日记相关功能（完整补全，无截断）
+        // 日记相关功能
         function bindDiaryWordCount() {
             const diaryContentEl = document.getElementById('diaryContent');
             diaryContentEl.addEventListener('input', () => {
@@ -1670,3 +1600,56 @@
                 date: new Date().toLocaleDateString(),
                 time: new Date().toLocaleTimeString(),
                 reply: null
+            };
+
+            window.coupleData.diaries.unshift(diary);
+            window.saveCoupleData();
+            document.getElementById('diaryContent').value = '';
+            document.getElementById('wordCount').textContent = '0/500 字';
+            renderDiaries();
+            updateDiaryStats();
+
+            if (diaryType === 'couple' && window.coupleData.isBound) {
+                alert(`已通知${window.coupleData.taNickname}：你发布了新的情侣日记～`);
+            }
+        }
+
+        function renderDiaries() {
+            const diaryListEl = document.getElementById('diaryList');
+            const diaryType = document.getElementById('diaryTypeSelect').value;
+            const category = document.getElementById('diaryCategorySelect').value;
+
+            let filteredDiaries = window.coupleData.diaries.filter(diary => diary.type === diaryType);
+            if (category !== 'all') {
+                filteredDiaries = filteredDiaries.filter(diary => diary.category === category);
+            }
+
+            if (filteredDiaries.length === 0) {
+                diaryListEl.innerHTML = `
+                    <div style="text-align: center; color: var(--text-light); padding: 20px;">
+                        还没有日记哦～ 写下你们的第一篇故事吧❤️
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '';
+            filteredDiaries.forEach(diary => {
+                html += `
+                    <div class="diary-item ${diary.type === 'couple' ? 'couple-diary' : 'personal-diary'}">
+                        <div class="diary-meta">
+                            <span class="diary-category-tag ${diary.type === 'personal' ? 'personal' : ''}">${diary.category}</span>
+                            <span class="diary-time">${diary.date} ${diary.time}</span>
+                        </div>
+                        <div class="diary-author">${diary.author} 的${diary.type === 'couple' ? '情侣' : '个人'}日记</div>
+                        <div class="diary-text">${diary.content}</div>
+                        <div class="diary-actions">
+                            <button class="btn btn-outline diary-action-btn" onclick="deleteDiary(${diary.id})">删除</button>
+                            ${diary.type === 'couple' ? `<button class="btn btn-outline diary-action-btn" onclick="replyToDiary(${diary.id})">回复</button>` : ''}
+                        </div>
+                        ${diary.reply ? `
+                            <div class="diary-reply">
+                                <div class="reply-header">
+                                    <span>💬 ${diary.reply.author} 的回复（${diary.reply.time}）</span>
+                                </div>
+                                <div class="reply-content
