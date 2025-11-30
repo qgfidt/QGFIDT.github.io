@@ -2,569 +2,1701 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>专属页面</title>
+    <title>情侣时光 - 钥匙扣专属爱情记录平台</title>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
+        :root {
+            --primary: #ff6b8b;
+            --primary-dark: #ff476f;
+            --secondary: #8b5cf6;
+            --secondary-dark: #7c3aed;
+            --bg: #fff5f7;
+            --card-bg: white;
+            --text: #333;
+            --text-light: #666;
+            --border: #ffd1dc;
+            --border-light: #ffe5ec;
+            --danger: #ef4444;
+            --love-icon: "❤️";
+        }
+        .couple-theme {
+            --primary: #ff6b8b;
+            --primary-dark: #ff476f;
+            --secondary: #8b5cf6;
+            --secondary-dark: #7c3aed;
+            --bg: #fff5f7;
+            --card-bg: #fff9fc;
+            --border: #ffd1dc;
+            --border-light: #ffe5ec;
+        }
+        .dark-mode {
+            --primary: #ff8fa3;
+            --primary-dark: #ff6b8b;
+            --secondary: #a78bfa;
+            --secondary-dark: #8b5cf6;
+            --bg: #1f1f2e;
+            --card-bg: #2d2d44;
+            --text: #f0f0f0;
+            --text-light: #b0b0c0;
+            --border: #4a4a6a;
+            --border-light: #3d3d5c;
+        }
         body {
             font-family: "Arial", "Microsoft YaHei", sans-serif;
             text-align: center;
             min-height: 100vh;
-            background: #f0f8ff;
+            background: var(--bg);
             padding: 20px;
             display: flex;
             justify-content: center;
             align-items: center;
             touch-action: manipulation;
+            color: var(--text);
+            transition: background 0.3s, color 0.3s;
+            overflow-x: hidden;
         }
-        .container {
-            max-width: 600px;
-            width: 100%;
-            padding: 25px;
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
-            display: none; /* 默认隐藏，密码验证通过后显示 */
+        .love-decoration {
+            position: fixed;
+            font-size: 12px;
+            color: var(--primary);
+            opacity: 0.3;
+            pointer-events: none;
+            z-index: -1;
         }
-        /* 密码锁定页面样式 */
-        .lock-screen {
+        .auth-panel {
             max-width: 500px;
             width: 100%;
-            padding: 30px;
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+            padding: 35px 30px;
+            background: var(--card-bg);
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(255,107,139,0.15);
+            position: relative;
+            overflow: hidden;
         }
-        .lock-title {
-            color: #2196F3;
+        .auth-panel::before {
+            content: var(--love-icon);
+            position: absolute;
+            top: 10px;
+            right: 10px;
             font-size: 24px;
-            margin-bottom: 20px;
+            color: var(--primary);
+            opacity: 0.2;
         }
-        #accessPassword {
-            padding: 12px 15px;
-            width: 240px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            font-size: 16px;
-            margin-bottom: 15px;
-            outline: none;
-            transition: border 0.2s;
-        }
-        #accessPassword:focus {
-            border-color: #2196F3;
-        }
-        .lock-desc {
-            color: #666;
-            font-size: 14px;
-            margin-top: 15px;
-        }
-        h1 {
-            color: #2196F3;
+        .panel-title {
+            color: var(--primary);
             font-size: 28px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        .panel-subtitle {
+            color: var(--text-light);
+            font-size: 14px;
             margin-bottom: 25px;
         }
-        /* 滑轮式计时显示（横向排列） */
-        .timer-box {
-            margin: 20px 0;
-            padding: 20px;
-            background: #e8f4f8;
+        .form-group {
+            margin-bottom: 20px;
+        }
+        input.form-control {
+            padding: 14px 18px;
+            width: 100%;
+            max-width: 280px;
+            border: 1px solid var(--border);
             border-radius: 8px;
+            font-size: 16px;
+            outline: none;
+            transition: all 0.2s;
+            background: var(--card-bg);
+            color: var(--text);
         }
-        .timer-title {
+        input.form-control:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(255,107,139,0.1);
+        }
+        .btn {
+            padding: 12px 24px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin: 0 8px;
+            font-weight: 500;
+        }
+        .btn:hover {
+            background: var(--primary-dark);
+        }
+        .btn-secondary {
+            background: var(--secondary);
+        }
+        .btn-secondary:hover {
+            background: var(--secondary-dark);
+        }
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--primary);
+            color: var(--primary);
+        }
+        .btn-outline:hover {
+            background: rgba(255,107,139,0.1);
+        }
+        .btn-danger {
+            background: var(--danger);
+        }
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+        .nfc-bind-btn {
+            margin-top: 15px;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            color: var(--secondary);
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+        .nfc-bind-btn:hover {
+            color: var(--secondary-dark);
+        }
+        .divider {
+            margin: 25px 0;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .divider::before, .divider::after {
+            content: "";
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+        }
+        .divider span {
+            color: var(--text-light);
+            font-size: 14px;
+        }
+        .account-list {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border-light);
+        }
+        .account-item {
+            padding: 8px 0;
+            color: var(--primary);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            font-size: 15px;
+        }
+        .account-item button {
+            padding: 4px 12px;
+            font-size: 13px;
+        }
+        .container {
+            max-width: 800px;
+            width: 100%;
+            padding: 30px;
+            background: var(--card-bg);
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(255,107,139,0.15);
+            display: none;
+            position: relative;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border-light);
+        }
+        .couple-info {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        .avatar-group {
+            display: flex;
+            align-items: center;
+            gap: -10px;
+        }
+        .avatar {
+            width: 55px;
+            height: 55px;
+            border-radius: 50%;
+            background: var(--primary);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-size: 22px;
+            font-weight: bold;
+            cursor: pointer;
+            overflow: hidden;
+            border: 3px solid var(--card-bg);
+            box-shadow: 0 0 0 2px var(--border);
+        }
+        .avatar.me {
+            z-index: 2;
+        }
+        .avatar.ta {
+            z-index: 1;
+        }
+        .avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .love-icon-between {
+            position: relative;
+            left: -15px;
+            z-index: 3;
+            background: var(--primary);
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 14px;
+            box-shadow: 0 2px 8px rgba(255,107,139,0.3);
+        }
+        .couple-nickname {
+            text-align: left;
+        }
+        .nickname-pair {
             font-size: 18px;
-            color: #333;
-            margin-bottom: 15px;
-            cursor: pointer; /* 提示可点击 */
+            color: var(--primary);
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
-        .timer-scroll {
+        .love-days {
+            font-size: 13px;
+            color: var(--text-light);
+            margin-top: 4px;
+        }
+        .header-actions {
+            display: flex;
+            gap: 12px;
+        }
+        .theme-toggle {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            color: var(--text-light);
+            font-size: 14px;
+        }
+        .theme-toggle:hover {
+            color: var(--primary);
+        }
+        .timer-section {
+            margin: 30px 0;
+            padding: 25px;
+            background: var(--border-light);
+            border-radius: 12px;
+            position: relative;
+            overflow: hidden;
+        }
+        .timer-section::before {
+            content: var(--love-icon);
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 30px;
+            color: var(--primary);
+            opacity: 0.1;
+        }
+        .section-title {
+            font-size: 20px;
+            color: var(--primary);
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .timer-tabs {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+        }
+        .timer-tab {
+            padding: 8px 18px;
+            background: var(--card-bg);
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 15px;
+            border: 1px solid var(--border);
+        }
+        .timer-tab.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+        .timer-tab:hover:not(.active) {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+        .timer-display {
             display: flex;
             justify-content: center;
             align-items: center;
             gap: 15px;
             flex-wrap: wrap;
+            margin-bottom: 20px;
         }
-        .timer-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+        .timer-unit {
+            text-align: center;
         }
         .timer-number {
-            width: 80px;
-            height: 60px;
-            line-height: 60px;
-            background: white;
-            border-radius: 6px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            font-size: 24px;
+            width: 85px;
+            height: 85px;
+            line-height: 85px;
+            background: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            font-size: 32px;
             font-weight: bold;
-            color: #2196F3;
-            margin-bottom: 5px;
-            overflow: hidden;
-            position: relative;
+            color: var(--primary);
+            border: 1px solid var(--border);
         }
         .timer-label {
-            font-size: 12px;
-            color: #666;
+            font-size: 14px;
+            color: var(--text-light);
+            margin-top: 8px;
         }
-        /* 计时按钮区域 */
-        .timer-btns {
-            margin: 15px 0;
+        .timer-actions {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .milestone-hint {
+            margin-top: 15px;
+            font-size: 13px;
+            color: var(--secondary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        .diary-section {
+            margin: 30px 0;
+            padding: 25px;
+            background: var(--border-light);
+            border-radius: 12px;
+        }
+        .diary-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        .diary-filters {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+        .diary-type-select {
+            padding: 8px 15px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--card-bg);
+            color: var(--text);
+            outline: none;
+            cursor: pointer;
+            transition: border 0.2s;
+        }
+        .diary-type-select:focus {
+            border-color: var(--primary);
+        }
+        .diary-category-select {
+            padding: 8px 15px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--card-bg);
+            color: var(--text);
+            outline: none;
+            cursor: pointer;
+            transition: border 0.2s;
+        }
+        .diary-category-select:focus {
+            border-color: var(--primary);
+        }
+        .diary-stats {
+            font-size: 13px;
+            color: var(--text-light);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .diary-content {
+            width: 100%;
+            height: 140px;
+            padding: 15px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            resize: none;
+            font-size: 15px;
+            background: var(--card-bg);
+            color: var(--text);
+            outline: none;
+            transition: border 0.2s;
+            margin-bottom: 15px;
+        }
+        .diary-content:focus {
+            border-color: var(--primary);
+        }
+        .diary-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .word-count {
+            font-size: 13px;
+            color: var(--text-light);
+        }
+        .diary-list {
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 25px;
+            padding-right: 10px;
+        }
+        .diary-item {
+            padding: 18px;
+            background: var(--card-bg);
+            border-radius: 10px;
+            margin-bottom: 15px;
+            border: 1px solid var(--border);
+            position: relative;
+            text-align: left;
+        }
+        .diary-item.couple-diary {
+            border-left: 4px solid var(--primary);
+        }
+        .diary-item.personal-diary {
+            border-left: 4px solid var(--secondary);
+        }
+        .diary-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .diary-category-tag {
+            display: inline-block;
+            padding: 3px 10px;
+            background: var(--primary);
+            color: white;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .diary-category-tag.personal {
+            background: var(--secondary);
+        }
+        .diary-time {
+            font-size: 12px;
+            color: var(--text-light);
+        }
+        .diary-author {
+            font-size: 13px;
+            color: var(--primary);
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+        .diary-text {
+            line-height: 1.6;
+            font-size: 14px;
+            margin-bottom: 12px;
+        }
+        .diary-actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .diary-action-btn {
+            font-size: 12px;
+            padding: 4px 10px;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: background 0.2s;
+        }
+        .diary-reply {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px dashed var(--border);
+        }
+        .reply-header {
+            font-size: 12px;
+            color: var(--text-light);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .reply-content {
+            padding: 10px;
+            background: var(--border-light);
+            border-radius: 6px;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+        .diary-reply-input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 13px;
+            margin-top: 8px;
+            background: var(--card-bg);
+            color: var(--text);
+        }
+        .anniversary-section {
+            margin: 30px 0;
+            padding: 25px;
+            background: var(--border-light);
+            border-radius: 12px;
+        }
+        .anniversary-list {
             display: flex;
             flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        .anniversary-card {
+            width: 160px;
+            padding: 15px;
+            background: var(--card-bg);
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            text-align: center;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .anniversary-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 15px rgba(255,107,139,0.1);
+        }
+        .anniversary-icon {
+            font-size: 24px;
+            color: var(--primary);
+            margin-bottom: 8px;
+        }
+        .anniversary-title {
+            font-size: 15px;
+            font-weight: 500;
+            margin-bottom: 5px;
+        }
+        .anniversary-date {
+            font-size: 13px;
+            color: var(--text-light);
+            margin-bottom: 8px;
+        }
+        .anniversary-countdown {
+            font-size: 14px;
+            color: var(--secondary);
+            font-weight: 500;
+        }
+        .add-anniversary-btn {
+            font-size: 14px;
+            padding: 8px 15px;
+        }
+        .data-section {
+            margin: 30px 0;
+            padding: 25px;
+            background: var(--border-light);
+            border-radius: 12px;
+        }
+        .data-actions {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        .data-hint {
+            margin-top: 15px;
+            font-size: 13px;
+            color: var(--text-light);
+        }
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 450px;
+            text-align: center;
+            box-shadow: 0 4px 25px rgba(0,0,0,0.15);
+        }
+        .modal-title {
+            font-size: 20px;
+            color: var(--primary);
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
             justify-content: center;
             gap: 8px;
         }
-        .btn {
-            padding: 9px 18px;
-            background: #2196F3;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            font-size: 15px;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-        .btn:hover {
-            background: #1976D2;
-        }
-        .btn-special {
-            background: #ff7043;
-        }
-        .btn-special:hover {
-            background: #f4511e;
-        }
-        /* 日记区域 */
-        .diary-box {
-            margin: 25px 0;
-        }
-        textarea {
-            width: 100%;
-            height: 100px;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            resize: none;
-            font-size: 15px;
-            margin: 10px 0;
-            outline: none;
-            transition: border 0.2s;
-        }
-        textarea:focus {
-            border-color: #2196F3;
-        }
-        .diary-list {
-            max-height: 150px;
-            overflow-y: auto;
+        .modal-form-group {
+            margin-bottom: 20px;
             text-align: left;
-            margin-top: 10px;
-            padding-right: 5px;
         }
-        .diary-item {
-            padding: 8px;
-            margin-bottom: 8px;
-            background: #f9f9f9;
-            border-radius: 4px;
+        .modal-form-label {
+            display: block;
             font-size: 14px;
+            color: var(--text);
+            margin-bottom: 8px;
+            font-weight: 500;
         }
-        .diary-item strong {
-            color: #2196F3;
+        .modal-footer {
+            margin-top: 25px;
+            display: flex;
+            justify-content: center;
+            gap: 12px;
         }
-        /* 清空功能相关 */
-        #clearCode {
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            width: 180px;
-            margin-right: 8px;
-            margin-top: 10px;
-            outline: none;
-            transition: border 0.2s;
+        .report-modal-content {
+            max-width: 600px;
+            padding: 30px;
         }
-        #clearCode:focus {
-            border-color: #2196F3;
+        .report-header {
+            margin-bottom: 25px;
         }
-        .clear-trigger {
-            margin-top: 10px;
-            color: #999;
-            font-size: 12px;
-            cursor: pointer;
-            user-select: none;
+        .report-title {
+            font-size: 22px;
+            color: var(--primary);
+            margin-bottom: 8px;
         }
-        .clear-trigger:hover {
-            color: #666;
+        .report-subtitle {
+            font-size: 14px;
+            color: var(--text-light);
         }
-        /* 音乐提示 */
-        .music-tip {
-            font-size: 12px;
-            color: #999;
-            margin: 10px 0;
+        .report-stats {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+            margin-bottom: 25px;
         }
-        /* 隐藏的重置按钮（点击计时标题5次显示） */
-        .hidden-reset {
-            display: none;
-            margin-top: 10px;
+        .report-stat-item {
+            text-align: center;
+            flex: 1;
+            min-width: 120px;
         }
-        /* 计时记忆提示 */
-        .memory-tip {
-            font-size: 11px;
-            color: #888;
-            margin-top: 8px;
+        .report-stat-number {
+            font-size: 32px;
+            color: var(--primary);
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .report-stat-label {
+            font-size: 14px;
+            color: var(--text-light);
+        }
+        .report-footer {
+            margin-top: 25px;
+            font-size: 15px;
+            color: var(--secondary);
+            font-weight: 500;
+        }
+        .milestone-modal-content {
+            max-width: 500px;
+            padding: 0;
+            border-radius: 16px;
+            overflow: hidden;
+        }
+        .milestone-card {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            padding: 40px 30px;
+            color: white;
+            text-align: center;
+        }
+        .milestone-card-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+        .milestone-card-title {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .milestone-card-desc {
+            font-size: 16px;
+            margin-bottom: 20px;
+            opacity: 0.9;
+        }
+        .milestone-card-date {
+            font-size: 14px;
+            opacity: 0.8;
+            margin-bottom: 25px;
+        }
+        .milestone-card-actions {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+        }
+        .nfc-checkin-btn {
+            margin-top: 15px;
+        }
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                gap: 15px;
+            }
+            .couple-info {
+                flex-direction: column;
+                gap: 10px;
+            }
+            .couple-nickname {
+                text-align: center;
+            }
+            .timer-number {
+                width: 70px;
+                height: 70px;
+                line-height: 70px;
+                font-size: 28px;
+            }
+            .anniversary-card {
+                width: 140px;
+            }
+        }
+        @media (max-width: 480px) {
+            .auth-panel, .container {
+                padding: 25px 15px;
+            }
+            input.form-control {
+                width: 100%;
+            }
+            .btn {
+                width: 100%;
+                margin: 5px 0;
+            }
+            .timer-display {
+                gap: 10px;
+            }
+            .timer-number {
+                width: 60px;
+                height: 60px;
+                line-height: 60px;
+                font-size: 24px;
+            }
+            .diary-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
         }
     </style>
 </head>
 <body>
-    <!-- 密码锁定页面（默认显示） -->
-    <div class="lock-screen" id="lockScreen">
-        <h2 class="lock-title">请输入访问密码</h2>
-        <input type="password" id="accessPassword" placeholder="输入密码解锁专属页面" autocomplete="off">
-        <br>
-        <button onclick="verifyPassword()" class="btn">确认访问</button>
-        <p class="lock-desc">每次进入都需验证密码，保障隐私安全</p>
+    <!-- 爱心装饰元素 -->
+    <div class="love-decoration" style="top: 10%; left: 5%;">❤️</div>
+    <div class="love-decoration" style="top: 20%; right: 8%;">❤️</div>
+    <div class="love-decoration" style="bottom: 15%; left: 10%;">❤️</div>
+    <div class="love-decoration" style="bottom: 25%; right: 12%;">❤️</div>
+
+    <!-- 登录/注册面板 -->
+    <div class="auth-panel" id="authPanel">
+        <h2 class="panel-title">❤️ 情侣时光</h2>
+        <p class="panel-subtitle">钥匙扣专属 · 记录你们的每一刻美好</p>
+        
+        <div class="form-group">
+            <input type="text" id="userName" class="form-control" placeholder="输入用户名" autocomplete="off">
+        </div>
+        <div class="form-group">
+            <input type="password" id="userPwd" class="form-control" placeholder="输入密码（至少6位）" autocomplete="off">
+        </div>
+        <div class="form-group">
+            <input type="text" id="coupleNickname" class="form-control" placeholder="你的情侣昵称（如：宝宝）" autocomplete="off">
+        </div>
+        
+        <button onclick="loginAccount()" class="btn">登录账户</button>
+        <button onclick="createAccount()" class="btn btn-secondary">创建账户</button>
+        
+        <div class="nfc-bind-btn" onclick="nfcQuickBind()">
+            <span>🔑 用情侣钥匙扣快速绑定</span>
+        </div>
+        
+        <div class="divider">
+            <span>已创建账户</span>
+        </div>
+        
+        <div class="account-list" id="accountList">
+            <div class="account-item">暂无已创建账户</div>
+        </div>
     </div>
 
-    <!-- 主内容（密码验证通过后显示） -->
+    <!-- 主内容容器 -->
     <div class="container" id="mainContent">
-        <h1>欢迎你的到来！</h1>
+        <div class="header">
+            <div class="couple-info">
+                <div class="avatar-group">
+                    <div class="avatar me" id="myAvatar" onclick="openAvatarModal('me')">
+                        <span id="myAvatarText">我</span>
+                        <img id="myAvatarImg" style="display: none;" alt="我的头像">
+                    </div>
+                    <div class="love-icon-between">❤️</div>
+                    <div class="avatar ta" id="taAvatar" onclick="openAvatarModal('ta')">
+                        <span id="taAvatarText">TA</span>
+                        <img id="taAvatarImg" style="display: none;" alt="TA的头像">
+                    </div>
+                </div>
+                <div class="couple-nickname">
+                    <div class="nickname-pair" id="nicknamePair">
+                        <span id="myNickname">我</span> & <span id="taNickname">TA</span>
+                    </div>
+                    <div class="love-days" id="loveDays">恋爱中 · 已陪伴 0 天</div>
+                </div>
+            </div>
+            <div class="header-actions">
+                <div class="theme-toggle" onclick="toggleDarkMode()">
+                    <span id="themeIcon">🌙</span>
+                    <span id="themeText">黑暗模式</span>
+                </div>
+                <button onclick="logoutAccount()" class="btn btn-outline">退出</button>
+            </div>
+        </div>
 
-        <!-- 音乐播放提示 -->
-        <div class="music-tip" id="musicTip">加载音乐中... 点击/滑动页面可触发播放</div>
-
-        <!-- 计时功能（滑轮式显示+隐藏重置+记忆功能） -->
-        <div class="timer-box">
-            <h3 class="timer-title" onclick="triggerHiddenReset()">计时统计</h3>
-            <div class="timer-scroll">
-                <div class="timer-item">
-                    <div class="timer-number" id="daysNum">00</div>
+        <!-- 情侣专属计时模块 -->
+        <div class="timer-section">
+            <h3 class="section-title">❤️ 爱情计时</h3>
+            <div class="timer-tabs" id="timerTabs">
+                <div class="timer-tab active" data-timer-id="loveDays">恋爱天数</div>
+                <div class="timer-tab" data-timer-id="nextMeet">下次见面</div>
+                <div class="timer-tab" data-timer-id="bindDay">绑定纪念日</div>
+            </div>
+            <div class="timer-display">
+                <div class="timer-unit">
+                    <div class="timer-number" id="timerDays">00</div>
                     <div class="timer-label">天</div>
                 </div>
-                <div class="timer-item">
-                    <div class="timer-number" id="hoursNum">00</div>
+                <div class="timer-unit">
+                    <div class="timer-number" id="timerHours">00</div>
                     <div class="timer-label">时</div>
                 </div>
-                <div class="timer-item">
-                    <div class="timer-number" id="minutesNum">00</div>
+                <div class="timer-unit">
+                    <div class="timer-number" id="timerMinutes">00</div>
                     <div class="timer-label">分</div>
                 </div>
-                <div class="timer-item">
-                    <div class="timer-number" id="secondsNum">00</div>
+                <div class="timer-unit">
+                    <div class="timer-number" id="timerSeconds">00</div>
                     <div class="timer-label">秒</div>
                 </div>
             </div>
-            <div class="timer-btns">
-                <button onclick="startTimerNow()" class="btn">从现在开始计时</button>
-                <button onclick="selectStartDate()" class="btn">选择日期开始计时</button>
-                <button onclick="resetTimerToInitialState()" class="btn btn-special hidden-reset" id="hiddenResetBtn">重置计时</button>
+            <div class="timer-actions">
+                <button onclick="setLoveStartDate()" class="btn btn-outline">设置恋爱起始日</button>
+                <button onclick="setNextMeetDate()" class="btn btn-outline">更新下次见面</button>
+                <button onclick="resetTimer()" class="btn btn-danger" style="display: none;" id="resetTimerBtn">重置计时</button>
             </div>
-            <div class="memory-tip">✓ 自动保存计时记录，下次打开自动恢复</div>
+            <div class="milestone-hint" id="milestoneHint">
+                <span>📅 距离下一个里程碑：10天（恋爱满10天）</span>
+            </div>
+            <button onclick="nfcCheckIn()" class="btn btn-secondary nfc-checkin-btn">🔑 钥匙扣打卡（今日见面）</button>
         </div>
 
-        <!-- 音乐播放 -->
-        <audio id="musicPlayer" loop preload="auto">
-            <source src="0623.周杰伦-晴天.mp3" type="audio/mpeg">
-            您的浏览器不支持音频播放
-        </audio>
-
-        <!-- 日记功能 -->
-        <div class="diary-box">
-            <h3>每日日记</h3>
-            <textarea id="diaryContent" placeholder="记录今天的心情..."></textarea>
-            <button onclick="saveDiary()" class="btn">保存日记</button>
-            <input type="text" id="clearCode" placeholder="输入密码清空日记" style="display: none;">
-            <button onclick="checkClearCode()" class="btn btn-special" style="display: none;">确认清空</button>
-            <div class="diary-list" id="diaryList"></div>
+        <!-- 情侣日记模块 -->
+        <div class="diary-section">
+            <div class="diary-header">
+                <h3 class="section-title">❤️ 爱情日记</h3>
+                <div class="diary-filters">
+                    <select class="diary-type-select" id="diaryTypeSelect" onchange="filterDiaries()">
+                        <option value="couple">情侣日记（双方可见）</option>
+                        <option value="personal">个人日记（仅自己可见）</option>
+                    </select>
+                    <select class="diary-category-select" id="diaryCategorySelect" onchange="filterDiaries()">
+                        <option value="all">所有分类</option>
+                        <option value="约会">约会</option>
+                        <option value="礼物">礼物</option>
+                        <option value="争吵和解">争吵和解</option>
+                        <option value="异地思念">异地思念</option>
+                        <option value="共同目标">共同目标</option>
+                        <option value="其他">其他</option>
+                    </select>
+                </div>
+                <div class="diary-stats">
+                    <span>共同记录：<span id="coupleDiaryCount">0</span> 篇</span>
+                    <span>总字数：<span id="totalWordCount">0</span> 字</span>
+                </div>
+            </div>
+            <textarea class="diary-content" id="diaryContent" placeholder="写下你们的故事..."></textarea>
+            <div class="diary-footer">
+                <div class="word-count" id="wordCount">0/500 字</div>
+                <button onclick="saveDiary()" class="btn">保存日记</button>
+            </div>
+            <div class="diary-list" id="diaryList">
+                <div style="text-align: center; color: var(--text-light); padding: 20px;">
+                    还没有日记哦～ 写下你们的第一篇故事吧❤️
+                </div>
+            </div>
         </div>
 
-        <!-- 日记清空触发入口 -->
-        <div class="clear-trigger" onclick="triggerClearEntry()">
-            点击5次显示日记清空功能
+        <!-- 纪念日提醒模块 -->
+        <div class="anniversary-section">
+            <h3 class="section-title">❤️ 重要纪念日</h3>
+            <div class="anniversary-list" id="anniversaryList">
+                <!-- 纪念日卡片动态生成 -->
+            </div>
+            <button onclick="openAddAnniversaryModal()" class="btn btn-outline add-anniversary-btn">+ 添加纪念日</button>
+        </div>
+
+        <!-- 数据管理模块 -->
+        <div class="data-section">
+            <h3 class="section-title">❤️ 爱情数据管理</h3>
+            <div class="data-actions">
+                <button onclick="exportCoupleData()" class="btn">导出爱情纪念册</button>
+                <button onclick="importCoupleData()" class="btn btn-secondary">导入数据</button>
+                <button onclick="generateLoveReport()" class="btn btn-outline">生成爱情报告</button>
+            </div>
+            <div class="data-hint">
+                数据本地存储，建议定期导出备份～ 纪念册可打印作为爱情信物
+            </div>
+        </div>
+
+        <!-- 情侣共同目标模块 -->
+        <div class="data-section">
+            <h3 class="section-title">❤️ 情侣共同目标</h3>
+            <div style="margin-bottom: 20px;">
+                <input type="text" id="goalContent" class="form-control" placeholder="输入共同目标（如：一起存钱旅行）" style="margin-bottom: 10px;">
+                <button onclick="addCoupleGoal()" class="btn">添加目标</button>
+            </div>
+            <div id="goalList" style="max-height: 200px; overflow-y: auto; text-align: left;">
+                <div style="color: var(--text-light); padding: 10px; text-align: center;">还没有共同目标，一起定个小目标吧～</div>
+            </div>
         </div>
     </div>
 
-    <script>
-        // 核心配置：访问密码（固定为25014105）
-        const ACCESS_PASSWORD = "25014105";
-        let timerInterval;
-        const SPECIAL_DATE = new Date(2007, 7, 8); // 2007-08-08（特殊日期）
-        const DEFAULT_START_DATE = new Date(); // 默认计时起点：当前时间
-        let clickCount = 0; // 日记清空触发计数
-        let resetClickCount = 0; // 重置按钮触发计数
-        let musicPlayed = false;
-        const audio = document.getElementById('musicPlayer');
-        const musicTip = document.getElementById('musicTip');
-        const hiddenResetBtn = document.getElementById('hiddenResetBtn');
-        const pageOpenTime = new Date();
+    <!-- 头像上传模态框 -->
+    <div class="modal" id="avatarModal">
+        <div class="modal-content">
+            <h3 class="modal-title">❤️ 更换头像</h3>
+            <input type="file" id="avatarFile" accept="image/*" onchange="previewAvatar()" style="display: none;">
+            <button class="btn" onclick="document.getElementById('avatarFile').click()">选择图片</button>
+            <img id="avatarPreview" style="display: none; width: 120px; height: 120px; border-radius: 50%; margin: 15px auto; object-fit: cover;" alt="头像预览">
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeAvatarModal()">取消</button>
+                <button class="btn" onclick="saveAvatar()">确认保存</button>
+            </div>
+        </div>
+    </div>
 
-        // 页面加载时直接显示密码框（取消7天免验证）
+    <!-- 情侣绑定模态框 -->
+    <div class="modal" id="coupleBindModal">
+        <div class="modal-content">
+            <h3 class="modal-title">❤️ 绑定情侣账户</h3>
+            <div class="modal-form-group">
+                <label class="modal-form-label">邀请码（对方生成）</label>
+                <input type="text" id="bindCode" class="form-control" placeholder="输入6位邀请码">
+            </div>
+            <div class="modal-form-group">
+                <label class="modal-form-label">TA的昵称</label>
+                <input type="text" id="taBindNickname" class="form-control" placeholder="输入TA的情侣昵称">
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeCoupleBindModal()">取消</button>
+                <button class="btn" onclick="bindCoupleAccount()">确认绑定</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 添加纪念日模态框 -->
+    <div class="modal" id="addAnniversaryModal">
+        <div class="modal-content">
+            <h3 class="modal-title">❤️ 添加纪念日</h3>
+            <div class="modal-form-group">
+                <label class="modal-form-label">纪念日名称</label>
+                <input type="text" id="anniversaryName" class="form-control" placeholder="如：恋爱纪念日、TA的生日">
+            </div>
+            <div class="modal-form-group">
+                <label class="modal-form-label">日期</label>
+                <input type="date" id="anniversaryDate" class="form-control">
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeAddAnniversaryModal()">取消</button>
+                <button class="btn" onclick="saveAnniversary()">确认添加</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 爱情成长报告模态框 -->
+    <div class="modal" id="loveReportModal">
+        <div class="modal-content report-modal-content">
+            <div class="report-header">
+                <h3 class="report-title">❤️ 你们的爱情成长报告</h3>
+                <p class="report-subtitle" id="reportDate">生成时间：2024年X月X日</p>
+            </div>
+            <div class="report-stats">
+                <div class="report-stat-item">
+                    <div class="report-stat-number" id="reportLoveDays">0</div>
+                    <div class="report-stat-label">恋爱天数</div>
+                </div>
+                <div class="report-stat-item">
+                    <div class="report-stat-number" id="reportDiaryCount">0</div>
+                    <div class="report-stat-label">共同日记</div>
+                </div>
+                <div class="report-stat-item">
+                    <div class="report-stat-number" id="reportWordCount">0</div>
+                    <div class="report-stat-label">总字数</div>
+                </div>
+                <div class="report-stat-item">
+                    <div class="report-stat-number" id="reportMilestoneCount">0</div>
+                    <div class="report-stat-label">达成里程碑</div>
+                </div>
+            </div>
+            <div style="line-height: 1.6; font-size: 14px; color: var(--text);">
+                <p>亲爱的 <span id="reportNickname1">我</span> 和 <span id="reportNickname2">TA</span>：</p>
+                <p style="margin: 10px 0;">你们已经携手走过了 <span id="reportLoveDaysText">0</span> 天，共同记录了 <span id="reportDiaryCountText">0</span> 篇日记，写下了 <span id="reportWordCountText">0</span> 字的美好回忆。</p>
+                <p style="margin: 10px 0;">你们一起经历了 <span id="reportMilestoneCountText">0</span> 个重要里程碑，每一个瞬间都值得被珍藏。</p>
+                <p style="margin: 10px 0; color: var(--primary); font-weight: 500;">愿你们永远相爱，携手奔赴更远的未来～❤️</p>
+            </div>
+            <div class="report-footer">
+                <button onclick="downloadLoveReport()" class="btn">下载报告</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 里程碑纪念卡片模态框 -->
+    <div class="modal" id="milestoneModal">
+        <div class="modal-content milestone-modal-content">
+            <div class="milestone-card">
+                <div class="milestone-card-icon">🎉</div>
+                <div class="milestone-card-title" id="milestoneTitle">恋爱满10天啦！</div>
+                <div class="milestone-card-desc" id="milestoneDesc">你们已经携手走过了10个日夜，继续甜蜜下去吧～</div>
+                <div class="milestone-card-date" id="milestoneDate">2024年X月X日</div>
+                <div class="milestone-card-actions">
+                    <button onclick="saveMilestoneCard()" class="btn">保存纪念卡片</button>
+                    <button onclick="closeMilestoneModal()" class="btn btn-outline">关闭</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 音乐播放 -->
+    <audio id="musicPlayer" loop preload="auto">
+        <source src="https://cdn.freesound.org/previews/501/501680_10226512-lq.mp3" type="audio/mpeg">
+        您的浏览器不支持音频播放
+      ></audio>
+
+    <script>
+        // 核心配置
+        const COUPLE_MILESTONES = [7, 30, 52, 100, 131, 200, 365, 520, 1314]; // 情侣专属里程碑（天）
+        const DEFAULT_ANNIVERSARIES = [
+            { id: 'loveStart', name: '恋爱纪念日', date: '', icon: '❤️' },
+            { id: 'firstDate', name: '第一次约会', date: '', icon: '💑' },
+            { id: 'bindDay', name: '绑定纪念日', date: new Date().toISOString().split('T')[0], icon: '🔗' }
+        ];
+        let currentUser = null;
+        let coupleData = {
+            myNickname: '',
+            taNickname: '',
+            isBound: false,
+            bindCode: '',
+            loveStartDate: '',
+            nextMeetDate: '',
+            timers: {
+                loveDays: { startDate: '', name: '恋爱天数' },
+                nextMeet: { startDate: '', name: '下次见面' },
+                bindDay: { startDate: new Date().toISOString().split('T')[0], name: '绑定纪念日' }
+            },
+            diaries: [],
+            anniversaries: [...DEFAULT_ANNIVERSARIES],
+            avatars: { me: '', ta: '' },
+            darkMode: false,
+            passedMilestones: [],
+            lastMilestoneCheck: '',
+            hasShownGuide: false,
+            coupleGoals: []
+        };
+        let currentTimerId = 'loveDays';
+        let timerInterval;
+        let activeAvatarType = 'me'; // 用于头像上传
+
+        // 页面加载初始化
         window.addEventListener('load', () => {
-            document.getElementById('lockScreen').style.display = 'block';
-            document.getElementById('mainContent').style.display = 'none';
-            // 清除可能残留的验证状态（防止缓存）
-            localStorage.removeItem('accessVerified');
-            localStorage.removeItem('verifyExpire');
+            generateLoveDecorations();
+            checkDarkMode();
+            renderAccountList();
+            checkNFCQuickBind();
+            initMusic();
         });
 
-        // 密码验证逻辑（仅本次会话有效，刷新/关闭后需重新验证）
-        function verifyPassword() {
-            const inputPwd = document.getElementById('accessPassword').value.trim();
-            
-            if (inputPwd === ACCESS_PASSWORD) {
-                // 验证通过：显示主内容并初始化功能（不存储验证状态）
-                document.getElementById('lockScreen').style.display = 'none';
+        // 生成随机爱心装饰
+        function generateLoveDecorations() {
+            const count = 8;
+            const container = document.body;
+            for (let i = 0; i < count; i++) {
+                const love = document.createElement('div');
+                love.className = 'love-decoration';
+                love.textContent = '❤️';
+                love.style.top = `${Math.random() * 100}%`;
+                love.style.left = `${Math.random() * 100}%`;
+                love.style.fontSize = `${8 + Math.random() * 12}px`;
+                love.style.opacity = `${0.1 + Math.random() * 0.2}`;
+                container.appendChild(love);
+            }
+        }
+
+        // 账户相关工具函数
+        function getAccounts() {
+            const accountsStr = localStorage.getItem('coupleAccounts');
+            return accountsStr ? JSON.parse(accountsStr) : [];
+        }
+
+        function saveCoupleData() {
+            if (!currentUser) return;
+            const accounts = getAccounts();
+            const accountIndex = accounts.findIndex(account => account.userName === currentUser);
+            if (accountIndex !== -1) {
+                accounts[accountIndex].coupleData = coupleData;
+                localStorage.setItem('coupleAccounts', JSON.stringify(accounts));
+            }
+        }
+
+        // 账户功能
+        function createAccount() {
+            const userName = document.getElementById('userName').value.trim();
+            const userPwd = document.getElementById('userPwd').value.trim();
+            const nickname = document.getElementById('coupleNickname').value.trim();
+
+            if (!userName) {
+                alert('用户名不能为空！');
+                return;
+            }
+            if (!userPwd || userPwd.length < 6) {
+                alert('密码不能为空且长度至少6位！');
+                return;
+            }
+            if (!nickname) {
+                alert('情侣昵称不能为空！');
+                return;
+            }
+
+            const accounts = getAccounts();
+            if (accounts.some(account => account.userName === userName)) {
+                alert('该用户名已存在！请更换用户名');
+                return;
+            }
+
+            // 生成6位邀请码
+            const bindCode = Math.floor(100000 + Math.random() * 900000).toString();
+            // 初始化情侣数据
+            const initCoupleData = JSON.parse(JSON.stringify(coupleData));
+            initCoupleData.myNickname = nickname;
+            initCoupleData.bindCode = bindCode;
+            initCoupleData.anniversaries[0].date = new Date().toISOString().split('T')[0]; // 默认恋爱纪念日为今天
+
+            // 保存账户
+            accounts.push({
+                userName: userName,
+                password: userPwd,
+                coupleData: initCoupleData
+            });
+            localStorage.setItem('coupleAccounts', JSON.stringify(accounts));
+
+            alert(`账户创建成功！你的情侣邀请码：${bindCode}\n请分享给TA绑定～`);
+            renderAccountList();
+            // 清空输入框
+            document.getElementById('userName').value = '';
+            document.getElementById('userPwd').value = '';
+            document.getElementById('coupleNickname').value = '';
+        }
+
+        function loginAccount() {
+            const userName = document.getElementById('userName').value.trim();
+            const userPwd = document.getElementById('userPwd').value.trim();
+
+            if (!userName || !userPwd) {
+                alert('用户名和密码不能为空！');
+                return;
+            }
+
+            const accounts = getAccounts();
+            const account = accounts.find(account => account.userName === userName && account.password === userPwd);
+
+            if (!account) {
+                alert('用户名或密码错误！');
+                return;
+            }
+
+            // 登录成功
+            currentUser = userName;
+            coupleData = account.coupleData;
+            // 切换到主界面
+            document.getElementById('authPanel').style.display = 'none';
+            document.getElementById('mainContent').style.display = 'block';
+            // 初始化界面数据
+            initCoupleInterface();
+            // 清空输入框
+            document.getElementById('userName').value = '';
+            document.getElementById('userPwd').value = '';
+            document.getElementById('coupleNickname').value = '';
+        }
+
+        function logoutAccount() {
+            if (confirm('确定要退出吗？')) {
+                // 停止定时器
+                if (timerInterval) clearInterval(timerInterval);
+                // 切换到登录界面
+                document.getElementById('mainContent').style.display = 'none';
+                document.getElementById('authPanel').style.display = 'block';
+                currentUser = null;
+                coupleData = JSON.parse(JSON.stringify({
+                    myNickname: '',
+                    taNickname: '',
+                    isBound: false,
+                    bindCode: '',
+                    loveStartDate: '',
+                    nextMeetDate: '',
+                    timers: {
+                        loveDays: { startDate: '', name: '恋爱天数' },
+                        nextMeet: { startDate: '', name: '下次见面' },
+                        bindDay: { startDate: new Date().toISOString().split('T')[0], name: '绑定纪念日' }
+                    },
+                    diaries: [],
+                    anniversaries: [...DEFAULT_ANNIVERSARIES],
+                    avatars: { me: '', ta: '' },
+                    darkMode: false,
+                    passedMilestones: [],
+                    lastMilestoneCheck: '',
+                    hasShownGuide: false,
+                    coupleGoals: []
+                }));
+            }
+        }
+
+        function bindCoupleAccount() {
+            const bindCode = document.getElementById('bindCode').value.trim();
+            const taNickname = document.getElementById('taBindNickname').value.trim();
+
+            if (!bindCode || bindCode.length !== 6) {
+                alert('请输入6位邀请码！');
+                return;
+            }
+            if (!taNickname) {
+                alert('请输入TA的昵称！');
+                return;
+            }
+
+            // 查找邀请方账户
+            const accounts = getAccounts();
+            const targetAccount = accounts.find(account => 
+                account.coupleData.bindCode === bindCode && !account.coupleData.isBound
+            );
+
+            if (!targetAccount) {
+                alert('邀请码无效或已绑定！');
+                return;
+            }
+
+            // 绑定双方数据
+            coupleData.isBound = true;
+            coupleData.taNickname = taNickname;
+            coupleData.anniversaries = targetAccount.coupleData.anniversaries;
+            coupleData.loveStartDate = targetAccount.coupleData.loveStartDate || new Date().toISOString().split('T')[0];
+            coupleData.timers.loveDays.startDate = coupleData.loveStartDate;
+            coupleData.timers.bindDay.startDate = new Date().toISOString().split('T')[0];
+
+            // 更新本地账户数据
+            const currentAccountIndex = accounts.findIndex(account => account.userName === currentUser);
+            accounts[currentAccountIndex].coupleData = coupleData;
+            localStorage.setItem('coupleAccounts', JSON.stringify(accounts));
+
+            // 更新邀请方账户（标记为已绑定）
+            const targetAccountIndex = accounts.findIndex(account => account.userName === targetAccount.userName);
+            accounts[targetAccountIndex].coupleData.isBound = true;
+            accounts[targetAccountIndex].coupleData.taNickname = coupleData.myNickname;
+            localStorage.setItem('coupleAccounts', JSON.stringify(accounts));
+
+            alert(`绑定成功！现在可以和${taNickname}一起记录爱情啦～`);
+            closeCoupleBindModal();
+            initCoupleInterface();
+        }
+
+        // 渲染已创建账户列表（显示绑定状态）
+        function renderAccountList() {
+            const accountListEl = document.getElementById('accountList');
+            const accounts = getAccounts();
+
+            if (accounts.length === 0) {
+                accountListEl.innerHTML = '<div class="account-item">暂无已创建账户</div>';
+                return;
+            }
+
+            let html = '';
+            accounts.forEach(account => {
+                const isBound = account.coupleData.isBound;
+                html += `
+                    <div class="account-item">
+                        <span>${account.userName}</span>
+                        <span style="color: var(--text-light);">|</span>
+                        <span style="color: ${isBound ? '#22c55e' : '#f59e0b'}">
+                            ${isBound ? '已绑定情侣' : '未绑定'}
+                        </span>
+                        <button class="btn btn-outline" onclick="loginWithAccount('${account.userName}')">快速登录</button>
+                    </div>
+                `;
+            });
+            accountListEl.innerHTML = html;
+        }
+
+        // 快速登录已创建账户
+        function loginWithAccount(userName) {
+            const accounts = getAccounts();
+            const account = accounts.find(a => a.userName === userName);
+            if (account) {
+                currentUser = userName;
+                coupleData = account.coupleData;
+                document.getElementById('authPanel').style.display = 'none';
                 document.getElementById('mainContent').style.display = 'block';
-                initAllFunctions();
-                // 清空密码输入框，提升安全性
-                document.getElementById('accessPassword').value = '';
-            } else {
-                // 密码错误：提示并清空输入框
-                alert('密码错误！请重新输入');
-                document.getElementById('accessPassword').value = '';
+                initCoupleInterface();
             }
         }
 
-        // 初始化所有核心功能（密码验证通过后执行）
-        function initAllFunctions() {
-            // 1. 音乐播放初始化
-            audio.play().then(handleMusicPlaySuccess).catch(() => {
-                musicTip.textContent = '点击/滑动页面即可播放音乐';
-                const handlePlayTrigger = () => {
-                    if (!musicPlayed) {
-                        audio.play().then(handleMusicPlaySuccess).catch(() => {
-                            musicTip.textContent = '播放失败，请刷新页面重试';
-                        });
-                    }
-                };
-                document.addEventListener('click', handlePlayTrigger, { once: true });
-                document.addEventListener('touchmove', handlePlayTrigger, { once: true, passive: true });
-                document.addEventListener('mousemove', handlePlayTrigger, { once: true });
-            });
-            audio.addEventListener('error', () => {
-                musicTip.textContent = '音乐加载失败，请检查文件';
-            });
-
-            // 2. 计时功能初始化（带记忆）
+        // 初始化情侣界面
+        function initCoupleInterface() {
+            // 更新昵称
+            document.getElementById('myNickname').textContent = coupleData.myNickname;
+            document.getElementById('taNickname').textContent = coupleData.taNickname || 'TA';
+            // 更新头像
+            updateAvatars();
+            // 更新恋爱天数
+            updateLoveDaysDisplay();
+            // 渲染计时标签
+            renderTimerTabs();
+            // 初始化计时
             initTimer();
-
-            // 3. 日记功能初始化（带记忆）
+            // 渲染纪念日
+            renderAnniversaries();
+            // 渲染日记
             renderDiaries();
+            // 更新日记统计
+            updateDiaryStats();
+            // 检测里程碑
+            checkCoupleMilestones();
+            // 绑定日记字数统计
+            bindDiaryWordCount();
+            // 初始化共同目标
+            initCoupleGoals();
+            // 新手引导（首次使用时触发）
+            if (!coupleData.hasShownGuide) {
+                setTimeout(() => {
+                    alert(`❤️ 新手引导\n1. 先设置「恋爱起始日」记录陪伴时长\n2. 发布「情侣日记」和TA共同记录\n3. 添加「重要纪念日」避免忘记惊喜\n4. 用情侣钥匙扣NFC快速打卡/互动`);
+                    coupleData.hasShownGuide = true;
+                    saveCoupleData();
+                }, 1000);
+            }
         }
 
-        // 音乐播放成功处理
-        function handleMusicPlaySuccess() {
-            musicPlayed = true;
-            musicTip.textContent = '正在播放：周杰伦 - 晴天';
-            setTimeout(() => {
-                musicTip.style.opacity = '0.5';
-            }, 3000);
+        // 计时相关功能
+        function renderTimerTabs() {
+            const timerTabsEl = document.getElementById('timerTabs');
+            timerTabsEl.innerHTML = '';
+
+            Object.keys(coupleData.timers).forEach(timerId => {
+                const tab = document.createElement('div');
+                tab.className = `timer-tab ${timerId === currentTimerId ? 'active' : ''}`;
+                tab.dataset.timerId = timerId;
+                tab.textContent = coupleData.timers[timerId].name;
+                tab.onclick = () => switchTimer(timerId);
+                timerTabsEl.appendChild(tab);
+            });
         }
 
-        // 计时功能核心（带记忆+隐藏重置+日期限制）
+        function switchTimer(timerId) {
+            if (timerId === currentTimerId) return;
+            currentTimerId = timerId;
+            renderTimerTabs();
+            initTimer();
+            updateMilestoneHint();
+        }
+
         function initTimer() {
-            const savedStart = localStorage.getItem('timerStart');
-            let startDate;
+            if (timerInterval) clearInterval(timerInterval);
 
-            // 优先读取本地存储的计时起点（上次关闭时的状态）
-            if (savedStart) {
-                startDate = new Date(savedStart);
-                // 验证日期合法性（防止篡改）
-                if (isNaN(startDate.getTime()) || !(startDate.getTime() === SPECIAL_DATE.getTime() || startDate <= new Date())) {
-                    startDate = new Date();
-                    localStorage.setItem('timerStart', startDate.toISOString());
-                }
+            const timer = coupleData.timers[currentTimerId];
+            if (!timer.startDate) {
+                // 未设置日期，显示0
+                document.getElementById('timerDays').textContent = '00';
+                document.getElementById('timerHours').textContent = '00';
+                document.getElementById('timerMinutes').textContent = '00';
+                document.getElementById('timerSeconds').textContent = '00';
+                return;
+            }
+
+            // 启动定时器
+            updateTimerDisplay();
+            timerInterval = setInterval(updateTimerDisplay, 1000);
+        }
+
+        function updateTimerDisplay() {
+            const timer = coupleData.timers[currentTimerId];
+            const startDate = new Date(timer.startDate);
+            const now = new Date();
+            let timeDiff;
+
+            if (currentTimerId === 'nextMeet') {
+                // 下次见面：倒计时
+                timeDiff = startDate - now;
+                if (timeDiff < 0) timeDiff = 0;
             } else {
-                // 无存储记录时，使用当前时间作为初始起点并保存
-                startDate = new Date();
-                localStorage.setItem('timerStart', startDate.toISOString());
+                // 其他：累计时间
+                timeDiff = now - startDate;
             }
-
-            updateTimerDisplay(startDate);
-            startTimerInterval();
-        }
-
-        // 从现在开始计时（更新并保存新起点）
-        function startTimerNow() {
-            const now = new Date();
-            localStorage.setItem('timerStart', now.toISOString());
-            updateTimerDisplay(now);
-            restartTimerInterval();
-        }
-
-        // 选择日期开始计时（限制：2007-08-08或当前时间之前）
-        function selectStartDate() {
-            const maxDate = new Date().toISOString().split('T')[0];
-            const defaultDate = new Date().toISOString().split('T')[0];
-            const dateStr = prompt(`请输入开始日期（格式：YYYY-MM-DD）\n允许范围：2007-08-08 至 ${maxDate}`, defaultDate);
-            
-            if (!dateStr) return;
-            
-            const selectedDate = new Date(dateStr);
-            const selectedDateStr = selectedDate.toISOString().split('T')[0];
-            const specialDateStr = SPECIAL_DATE.toISOString().split('T')[0];
-
-            // 验证日期格式
-            if (isNaN(selectedDate.getTime())) {
-                alert('日期格式错误！请输入类似 2024-01-01 的格式');
-                return;
-            }
-
-            // 验证日期范围
-            if (selectedDateStr !== specialDateStr && selectedDate > new Date()) {
-                alert(`只能选择 ${specialDateStr} 或 ${maxDate} 之前的日期哦！`);
-                return;
-            }
-
-            localStorage.setItem('timerStart', selectedDate.toISOString());
-            updateTimerDisplay(selectedDate);
-            restartTimerInterval();
-        }
-
-        // 重置计时到初始状态（当前时间）
-        function resetTimerToInitialState() {
-            const initialDate = new Date();
-            localStorage.setItem('timerStart', initialDate.toISOString());
-            updateTimerDisplay(initialDate);
-            restartTimerInterval();
-            hiddenResetBtn.style.display = 'none';
-            resetClickCount = 0;
-            alert('已重置为初始计时状态（当前时间）！');
-        }
-
-        // 点击计时标题5次显示重置按钮
-        function triggerHiddenReset() {
-            resetClickCount++;
-            const titleEl = document.querySelector('.timer-title');
-            titleEl.style.color = '#ff7043';
-            setTimeout(() => {
-                titleEl.style.color = resetClickCount >= 5 ? '#333' : '#333';
-            }, 300);
-
-            if (resetClickCount >= 5) {
-                hiddenResetBtn.style.display = 'inline-block';
-                resetClickCount = 0;
-            }
-        }
-
-        // 滑轮式计时显示更新
-        function updateTimerDisplay(startDate) {
-            const now = new Date();
-            const timeDiff = Math.max(0, now - startDate);
 
             const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
             const hours = Math.floor((timeDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
             const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
             const seconds = Math.floor((timeDiff % (1000 * 60)) / 1000);
 
-            // 数字补零显示
-            const formatNum = num => num.toString().padStart(2, '0');
-            document.getElementById('daysNum').textContent = formatNum(days);
-            document.getElementById('hoursNum').textContent = formatNum(hours);
-            document.getElementById('minutesNum').textContent = formatNum(minutes);
-            document.getElementById('secondsNum').textContent = formatNum(seconds);
+            // 格式化显示
+            document.getElementById('timerDays').textContent = days.toString().padStart(2, '0');
+            document.getElementById('timerHours').textContent = hours.toString().padStart(2, '0');
+            document.getElementById('timerMinutes').textContent = minutes.toString().padStart(2, '0');
+            document.getElementById('timerSeconds').textContent = seconds.toString().padStart(2, '0');
         }
 
-        // 计时定时器（每秒更新）
-        function startTimerInterval() {
-            if (timerInterval) clearInterval(timerInterval);
-            timerInterval = setInterval(() => {
-                const savedStart = localStorage.getItem('timerStart');
-                if (savedStart) {
-                    updateTimerDisplay(new Date(savedStart));
+        function setLoveStartDate() {
+            const dateStr = prompt('请输入恋爱起始日期（格式：YYYY-MM-DD）', coupleData.loveStartDate || new Date().toISOString().split('T')[0]);
+            if (!dateStr) return;
+
+            // 验证日期格式
+            const date = new Date(dateStr);
+            if (isNaN(date.getTime())) {
+                alert('日期格式错误！');
+                return;
+            }
+
+            coupleData.loveStartDate = dateStr;
+            coupleData.timers.loveDays.startDate = dateStr;
+            // 保存数据
+            saveCoupleData();
+            // 更新计时
+            initTimer();
+            // 更新恋爱天数显示
+            updateLoveDaysDisplay();
+            // 检测里程碑
+            checkCoupleMilestones();
+        }
+
+        function setNextMeetDate() {
+            const dateStr = prompt('请输入下次见面日期（格式：YYYY-MM-DD）', coupleData.nextMeetDate || new Date().toISOString().split('T')[0]);
+            if (!dateStr) return;
+
+            // 验证日期格式
+            const date = new Date(dateStr);
+            if (isNaN(date.getTime())) {
+                alert('日期格式错误！');
+                return;
+            }
+
+            coupleData.nextMeetDate = dateStr;
+            coupleData.timers.nextMeet.startDate = dateStr;
+            // 保存数据
+            saveCoupleData();
+            // 更新计时
+            initTimer();
+            // 提醒对方（模拟）
+            if (coupleData.isBound) {
+                alert(`已通知${coupleData.taNickname}：你更新了下次见面时间！`);
+            }
+        }
+
+        function resetTimer() {
+            if (!confirm(`确定要重置${coupleData.timers[currentTimerId].name}吗？`)) return;
+
+            coupleData.timers[currentTimerId].startDate = new Date().toISOString().split('T')[0];
+            // 保存数据
+            saveCoupleData();
+            // 更新计时
+            initTimer();
+        }
+
+        function updateLoveDaysDisplay() {
+            if (!coupleData.loveStartDate) {
+                document.getElementById('loveDays').textContent = '恋爱中 · 已陪伴 0 天';
+                return;
+            }
+
+            const startDate = new Date(coupleData.loveStartDate);
+            const now = new Date();
+            const days = Math.floor((now - startDate) / (1000 * 60 * 60 * 24));
+            document.getElementById('loveDays').textContent = `恋爱中 · 已陪伴 ${days} 天`;
+        }
+
+        function updateMilestoneHint() {
+            if (currentTimerId !== 'loveDays' || !coupleData.loveStartDate) {
+                document.getElementById('milestoneHint').style.display = 'none';
+                return;
+            }
+
+            const startDate = new Date(coupleData.loveStartDate);
+            const now = new Date();
+            const days = Math.floor((now - startDate) / (1000 * 60 * 60 * 24));
+
+            // 查找下一个里程碑
+            const nextMilestone = COUPLE_MILESTONES.find(milestone => milestone > days);
+            if (nextMilestone) {
+                const diff = nextMilestone - days;
+                document.getElementById('milestoneHint').innerHTML = `📅 距离下一个里程碑：${diff}天（恋爱满${nextMilestone}天）`;
+                document.getElementById('milestoneHint').style.display = 'flex';
+            } else {
+                document.getElementById('milestoneHint').innerHTML = `🎉 已达成所有里程碑！你们的爱情太长久啦～`;
+                document.getElementById('milestoneHint').style.display = 'flex';
+            }
+        }
+
+        function checkCoupleMilestones() {
+            if (currentTimerId !== 'loveDays' || !coupleData.loveStartDate) return;
+
+            const startDate = new Date(coupleData.loveStartDate);
+            const now = new Date();
+            const days = Math.floor((now - startDate) / (1000 * 60 * 60 * 24));
+            const today = now.toISOString().split('T')[0];
+
+            // 避免重复检测
+            if (coupleData.lastMilestoneCheck === today) return;
+
+            // 检测未达成的里程碑
+            const newMilestones = COUPLE_MILESTONES.filter(
+                milestone => milestone <= days && !coupleData.passedMilestones.includes(milestone)
+            );
+
+            if (newMilestones.length > 0) {
+                const milestone = newMilestones[0];
+                // 记录已达成
+                coupleData.passedMilestones.push(milestone);
+                coupleData.lastMilestoneCheck = today;
+                saveCoupleData();
+                // 显示里程碑卡片
+                showMilestoneCard(milestone, days);
+            }
+        }
+
+        function showMilestoneCard(milestone, days) {
+            let title, desc;
+            switch (milestone) {
+                case 7: title = '恋爱满1周啦！'; desc = '你们已经甜蜜相伴7天，愿每周都如初见般美好～'; break;
+                case 30: title = '恋爱满1个月！'; desc = '30天的陪伴，是爱情的萌芽，继续茁壮成长吧～'; break;
+                case 52: title = '恋爱满52天！'; desc = '52天=我爱你，这是属于你们的爱情密码～'; break;
+                case 100: title = '恋爱满100天！'; desc = '百日同行，初心不变，未来还有更多精彩～'; break;
+                case 131: title = '恋爱满131天！'; desc = '131天=一生一世，愿你们永远相爱～'; break;
+                case 200: title = '恋爱满200天！'; desc = '200天的点点滴滴，都是珍贵的回忆～'; break;
+                case 365: title = '恋爱满1年！'; desc = '365天的陪伴，是爱情的里程碑，祝周年快乐～'; break;
+                case 520: title = '恋爱满520天！'; desc = '520=我爱你，这是最浪漫的数字，祝你们永远甜蜜～'; break;
+                case 1314: title = '恋爱满1314天！'; desc = '1314天=一生一世，愿你们相守一生，白头偕老～'; break;
+                default: title = `恋爱满${milestone}天！`; desc = `你们已经携手走过${milestone}天，继续甜蜜下去吧～`;
+            }
+
+            document.getElementById('milestoneTitle').textContent = title;
+            document.getElementById('milestoneDesc').textContent = desc;
+            document.getElementById('milestoneDate').textContent = new Date().toLocaleDateString();
+            document.getElementById('milestoneModal').style.display = 'flex';
+        }
+
+        // 日记相关功能
+        function bindDiaryWordCount() {
+            const diaryContentEl = document.getElementById('diaryContent');
+            diaryContentEl.addEventListener('input', () => {
+                const length = diaryContentEl.value.length;
+                document.getElementById('wordCount').textContent = `${length}/500 字`;
+                if (length > 500) {
+                    diaryContentEl.value = diaryContentEl.value.substring(0, 500);
+                    document.getElementById('wordCount').textContent = `500/500 字`;
                 }
-            }, 1000);
+            });
         }
 
-        function restartTimerInterval() {
-            clearInterval(timerInterval);
-            startTimerInterval();
-        }
-
-        // 日记功能（带本地存储记忆）
         function saveDiary() {
             const content = document.getElementById('diaryContent').value.trim();
+            const diaryType = document.getElementById('diaryTypeSelect').value;
+            const category = document.getElementById('diaryCategorySelect').value;
+
             if (!content) {
-                alert('日记内容不能为空哦！');
+                alert('日记内容不能为空！');
                 return;
             }
 
             const diary = {
                 id: Date.now(),
+                type: diaryType,
+                category: category,
+                content: content,
+                author: coupleData.myNickname,
+                authorType: 'me',
                 date: new Date().toLocaleDateString(),
-                content: content
+                time: new Date().toLocaleTimeString(),
+                reply: null
             };
 
-            const diaries = JSON.parse(localStorage.getItem('diaries') || '[]');
-            diaries.push(diary);
-            localStorage.setItem('diaries', JSON.stringify(diaries));
-
+            coupleData.diaries.unshift(diary);
+            // 保存数据
+            saveCoupleData();
+            // 清空输入框
             document.getElementById('diaryContent').value = '';
+            document.getElementById('wordCount').textContent = '0/500 字';
+            // 渲染日记
             renderDiaries();
+            // 更新统计
+            updateDiaryStats();
+
+            // 提醒对方（情侣日记）
+            if (diaryType === 'couple' && coupleData.isBound) {
+                alert(`已通知${coupleData.taNickname}：你发布了新的情侣日记～`);
+            }
         }
 
         function renderDiaries() {
-            const list = document.getElementById('diaryList');
-            const diaries = JSON.parse(localStorage.getItem('diaries') || '[]');
-            diaries.sort((a, b) => b.id - a.id); // 按时间倒序排列
+            const diaryListEl = document.getElementById('diaryList');
+            const diaryType = document.getElementById('diaryTypeSelect').value;
+            const category = document.getElementById('diaryCategorySelect').value;
 
-            let html = '';
-            diaries.forEach(item => {
-                html += `
-                    <div class="diary-item">
-                        <strong>${item.date}</strong>：${escapeHtml(item.content)}
+            // 过滤日记
+            let filteredDiaries = coupleData.diaries.filter(diary => diary.type === diaryType);
+            if (category !== 'all') {
+                filteredDiaries = filteredDiaries.filter(diary => diary.category === category);
+            }
+
+            if (filteredDiaries.length === 0) {
+                diaryListEl.innerHTML = `
+                    <div style="text-align: center; color: var(--text-light); padding: 20px;">
+                        还没有${diaryType === 'couple' ? '情侣' : '个人'}日记哦～ 写下你们的故事吧❤️
                     </div>
                 `;
-            });
-
-            list.innerHTML = html || '<div style="text-align: center; color: #999; padding: 10px;">暂无日记记录</div>';
-        }
-
-        // 防止XSS攻击：转义HTML特殊字符
-        function escapeHtml(str) {
-            return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-        }
-
-        // 日记清空功能（密码：25014105）
-        function triggerClearEntry() {
-            clickCount++;
-            const triggerEl = document.querySelector('.clear-trigger');
-            triggerEl.style.color = '#ff7043';
-            setTimeout(() => {
-                triggerEl.style.color = clickCount >= 5 ? '#666' : '#999';
-            }, 300);
-
-            if (clickCount >= 5) {
-                document.getElementById('clearCode').style.display = 'inline-block';
-                document.querySelector('.btn-special[onclick="checkClearCode()"]').style.display = 'inline-block';
-                triggerEl.textContent = '输入密码即可清空日记';
-                clickCount = 0;
-            } else {
-                triggerEl.textContent = `点击 ${5 - clickCount} 次显示日记清空功能`;
+                return;
             }
-        }
 
-        function checkClearCode() {
-            const code = document.getElementById('clearCode').value.trim();
-            if (code === '25014105') {
-                if (confirm('确定要清空所有日记吗？此操作不可恢复！')) {
-                    localStorage.removeItem('diaries');
-                    renderDiaries();
-                    document.getElementById('clearCode').value = '';
-                    document.getElementById('clearCode').style.display = 'none';
-                    document.querySelector('.btn-special[onclick="checkClearCode()"]').style.display = 'none';
-                    document.querySelector('.clear-trigger').textContent = '点击5次显示日记清空功能';
-                }
-            } else {
-                alert('密码错误！请输入正确密码');
-                document.getElementById('clearCode').value = '';
-            }
-        }
-
-        // 页面卸载时清除定时器（优化性能）
-        window.addEventListener('unload', () => {
-            if (timerInterval) clearInterval(timerInterval);
-        });
-    </script>
-</body>
-</html>
+            let html = '';
+            filteredDiaries.forEach(diary => {
+                const isMyDiary = diary.authorType
