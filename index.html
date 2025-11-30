@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>情侣时光 - 登录/注册</title>
+    <title>情侣时光 - 专属爱情记录</title>
     <style>
         * {
             margin: 0;
@@ -15,10 +15,11 @@
             background: #fff5f7;
             display: flex;
             justify-content: center;
-            align-items: center;
+            align-items: flex-start;
             min-height: 100vh;
             padding: 20px;
         }
+        /* 登录面板样式 */
         .auth-container {
             width: 100%;
             max-width: 400px;
@@ -27,6 +28,7 @@
             border-radius: 12px;
             box-shadow: 0 4px 20px rgba(255,107,139,0.15);
             text-align: center;
+            margin-bottom: 20px;
         }
         .title {
             color: #ff6b8b;
@@ -93,27 +95,122 @@
         .bind-text:hover {
             text-decoration: underline;
         }
+        /* 主内容样式 */
         .main-content {
             display: none;
-            text-align: center;
-            padding: 50px;
+            width: 100%;
+            max-width: 600px;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(255,107,139,0.15);
+            margin-bottom: 20px;
+        }
+        .main-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #ffd1dc;
         }
         .main-title {
             color: #ff6b8b;
-            margin-bottom: 30px;
+            font-size: 22px;
         }
         .logout-btn {
-            padding: 10px 20px;
+            padding: 8px 16px;
             background: #ff476f;
             color: white;
             border: none;
             border-radius: 8px;
             cursor: pointer;
+            font-size: 14px;
+        }
+        /* 功能模块通用样式 */
+        .section {
+            margin-bottom: 30px;
+        }
+        .section-title {
+            color: #ff6b8b;
+            font-size: 18px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .section-content {
+            background: #fff5f7;
+            padding: 15px;
+            border-radius: 8px;
+        }
+        /* 计时模块 */
+        .timer-container {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 15px;
+        }
+        .timer-item {
+            text-align: center;
+        }
+        .timer-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #ff6b8b;
+        }
+        .timer-label {
+            font-size: 14px;
+            color: #666;
+        }
+        .timer-btn {
+            padding: 8px 12px;
+            background: #8b5cf6;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 8px;
+        }
+        /* 日记模块 */
+        .diary-input {
+            width: 100%;
+            height: 100px;
+            padding: 12px;
+            border: 1px solid #ffd1dc;
+            border-radius: 8px;
+            resize: none;
+            margin-bottom: 10px;
+        }
+        .diary-btn {
+            padding: 8px 16px;
+            background: #ff6b8b;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        .diary-list {
+            margin-top: 15px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .diary-item {
+            background: white;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            border: 1px solid #ffd1dc;
+        }
+        .diary-date {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 5px;
         }
     </style>
 </head>
 <body>
-    <!-- 登录/注册面板（核心） -->
+    <!-- 登录/注册面板 -->
     <div class="auth-container" id="authPanel">
         <h2 class="title">❤️ 情侣时光</h2>
         
@@ -138,89 +235,247 @@
         </div>
     </div>
 
-    <!-- 主界面（登录后显示） -->
+    <!-- 主内容（包含所有功能） -->
     <div class="main-content" id="mainContent">
-        <h1 class="main-title" id="welcomeTitle">欢迎回来！</h1>
-        <p>登录成功！所有功能已解锁～</p>
-        <button class="logout-btn" onclick="logoutAccount()">退出登录</button>
+        <div class="main-header">
+            <h2 class="main-title" id="welcomeTitle">欢迎回来！</h2>
+            <button class="logout-btn" onclick="logoutAccount()">退出登录</button>
+        </div>
+
+        <!-- 1. 恋爱计时模块 -->
+        <div class="section">
+            <h3 class="section-title">⏳ 恋爱计时</h3>
+            <div class="section-content">
+                <div class="timer-container">
+                    <div class="timer-item">
+                        <div class="timer-number" id="loveDays">00</div>
+                        <div class="timer-label">天</div>
+                    </div>
+                    <div class="timer-item">
+                        <div class="timer-number" id="loveHours">00</div>
+                        <div class="timer-label">时</div>
+                    </div>
+                    <div class="timer-item">
+                        <div class="timer-number" id="loveMins">00</div>
+                        <div class="timer-label">分</div>
+                    </div>
+                    <div class="timer-item">
+                        <div class="timer-number" id="loveSecs">00</div>
+                        <div class="timer-label">秒</div>
+                    </div>
+                </div>
+                <button class="timer-btn" onclick="setLoveStartDate()">设置恋爱起始日</button>
+            </div>
+        </div>
+
+        <!-- 2. 情侣日记模块 -->
+        <div class="section">
+            <h3 class="section-title">📝 情侣日记</h3>
+            <div class="section-content">
+                <textarea class="diary-input" id="diaryContent" placeholder="记录你们的美好瞬间..."></textarea>
+                <button class="diary-btn" onclick="saveDiary()">保存日记</button>
+                <div class="diary-list" id="diaryList">
+                    <!-- 日记列表动态生成 -->
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. 纪念日模块 -->
+        <div class="section">
+            <h3 class="section-title">🎁 重要纪念日</h3>
+            <div class="section-content">
+                <input type="text" class="form-input" id="annivName" placeholder="纪念日名称（如：第一次约会）" style="margin-bottom: 10px;">
+                <input type="date" class="form-input" id="annivDate" style="margin-bottom: 10px;">
+                <button class="timer-btn" onclick="addAnniversary()">添加纪念日</button>
+                <div class="diary-list" id="annivList">
+                    <!-- 纪念日列表动态生成 -->
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
-        // 核心逻辑：只保留账户创建和登录，去除所有冗余
+        // 全局变量
         let currentUser = null;
+        let userData = {
+            nickname: '',
+            bindCode: '',
+            loveStartDate: '', // 恋爱起始日（时间戳）
+            diaries: [], // 日记列表
+            anniversaries: [] // 纪念日列表
+        };
+        let timerInterval = null;
 
-        // 1. 创建账户（100%稳定）
+        // 1. 创建账户（稳定逻辑）
         function createAccount() {
             const userName = document.getElementById('userName').value.trim();
             const userPwd = document.getElementById('userPwd').value.trim();
             const nickname = document.getElementById('coupleNickname').value.trim();
 
-            // 基础校验
             if (!userName) { alert('用户名不能为空！'); return; }
             if (!userPwd || userPwd.length < 6) { alert('密码不能为空且至少6位！'); return; }
             if (!nickname) { alert('情侣昵称不能为空！'); return; }
 
-            // 读取现有账户（兼容首次创建）
             let accounts = JSON.parse(localStorage.getItem('coupleAccounts')) || [];
-
-            // 检查用户名重复
             if (accounts.some(acc => acc.userName === userName)) {
                 alert('该用户名已存在！请更换');
                 return;
             }
 
-            // 生成邀请码
             const bindCode = Math.floor(100000 + Math.random() * 900000).toString();
-
-            // 构造账户数据
             const newAccount = {
                 userName: userName,
                 password: userPwd,
-                nickname: nickname,
-                bindCode: bindCode,
-                createTime: new Date().toLocaleString()
+                data: { ...userData, nickname: nickname, bindCode: bindCode }
             };
 
-            // 存入本地存储
             accounts.push(newAccount);
             localStorage.setItem('coupleAccounts', JSON.stringify(accounts));
-
-            // 反馈+清空
-            alert(`账户创建成功！\n用户名：${userName}\n情侣昵称：${nickname}\n邀请码：${bindCode}\n请牢记密码～`);
+            alert(`账户创建成功！\n邀请码：${bindCode}\n请牢记密码～`);
             document.getElementById('userName').value = '';
             document.getElementById('userPwd').value = '';
             document.getElementById('coupleNickname').value = '';
         }
 
-        // 2. 登录账户（100%稳定）
+        // 2. 登录账户（稳定逻辑+加载功能数据）
         function loginAccount() {
             const userName = document.getElementById('userName').value.trim();
             const userPwd = document.getElementById('userPwd').value.trim();
 
-            // 校验非空
             if (!userName || !userPwd) { alert('用户名和密码不能为空！'); return; }
 
-            // 读取账户
             const accounts = JSON.parse(localStorage.getItem('coupleAccounts')) || [];
             const account = accounts.find(acc => acc.userName === userName && acc.password === userPwd);
 
-            // 校验失败
             if (!account) { alert('用户名或密码错误！'); return; }
 
-            // 登录成功
+            // 登录成功：加载用户数据
             currentUser = account;
+            userData = account.data;
             document.getElementById('authPanel').style.display = 'none';
             document.getElementById('mainContent').style.display = 'block';
-            document.getElementById('welcomeTitle').textContent = `欢迎回来，${account.nickname}！`;
+            document.getElementById('welcomeTitle').textContent = `欢迎回来，${userData.nickname}！`;
+
+            // 初始化功能
+            initTimer();
+            renderDiaries();
+            renderAnniversaries();
         }
 
         // 3. 退出登录
         function logoutAccount() {
             currentUser = null;
+            if (timerInterval) clearInterval(timerInterval);
             document.getElementById('mainContent').style.display = 'none';
             document.getElementById('authPanel').style.display = 'block';
             document.getElementById('userName').value = '';
             document.getElementById('userPwd').value = '';
+        }
+
+        // -------------------- 功能模块：恋爱计时 --------------------
+        function setLoveStartDate() {
+            const dateStr = prompt('请输入恋爱起始日（格式：YYYY-MM-DD）', new Date().toISOString().split('T')[0]);
+            if (!dateStr) return;
+
+            const loveStart = new Date(dateStr).getTime();
+            if (isNaN(loveStart)) { alert('日期格式错误！'); return; }
+
+            userData.loveStartDate = loveStart;
+            saveUserData();
+            initTimer();
+        }
+
+        function initTimer() {
+            if (timerInterval) clearInterval(timerInterval);
+            if (!userData.loveStartDate) return;
+
+            timerInterval = setInterval(() => {
+                const now = new Date().getTime();
+                const diff = now - userData.loveStartDate;
+                const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                const secs = Math.floor((diff % (1000 * 60)) / 1000);
+
+                document.getElementById('loveDays').textContent = days.toString().padStart(2, '0');
+                document.getElementById('loveHours').textContent = hours.toString().padStart(2, '0');
+                document.getElementById('loveMins').textContent = mins.toString().padStart(2, '0');
+                document.getElementById('loveSecs').textContent = secs.toString().padStart(2, '0');
+            }, 1000);
+        }
+
+        // -------------------- 功能模块：情侣日记 --------------------
+        function saveDiary() {
+            const content = document.getElementById('diaryContent').value.trim();
+            if (!content) { alert('日记内容不能为空！'); return; }
+
+            const diary = {
+                id: Date.now(),
+                content: content,
+                date: new Date().toLocaleString()
+            };
+            userData.diaries.unshift(diary);
+            saveUserData();
+            renderDiaries();
+            document.getElementById('diaryContent').value = '';
+        }
+
+        function renderDiaries() {
+            const listEl = document.getElementById('diaryList');
+            if (userData.diaries.length === 0) {
+                listEl.innerHTML = '<div class="diary-item">还没有日记哦～写下你们的故事吧</div>';
+                return;
+            }
+
+            listEl.innerHTML = userData.diaries.map(diary => `
+                <div class="diary-item">
+                    <div class="diary-date">${diary.date}</div>
+                    <div>${diary.content}</div>
+                </div>
+            `).join('');
+        }
+
+        // -------------------- 功能模块：纪念日 --------------------
+        function addAnniversary() {
+            const name = document.getElementById('annivName').value.trim();
+            const dateStr = document.getElementById('annivDate').value.trim();
+            if (!name || !dateStr) { alert('名称和日期不能为空！'); return; }
+
+            const anniversary = {
+                id: Date.now(),
+                name: name,
+                date: dateStr
+            };
+            userData.anniversaries.push(anniversary);
+            saveUserData();
+            renderAnniversaries();
+            document.getElementById('annivName').value = '';
+            document.getElementById('annivDate').value = '';
+        }
+
+        function renderAnniversaries() {
+            const listEl = document.getElementById('annivList');
+            if (userData.anniversaries.length === 0) {
+                listEl.innerHTML = '<div class="diary-item">还没有添加纪念日哦～</div>';
+                return;
+            }
+
+            listEl.innerHTML = userData.anniversaries.map(anniv => `
+                <div class="diary-item">
+                    <div>${anniv.name}</div>
+                    <div class="diary-date">日期：${anniv.date}</div>
+                </div>
+            `).join('');
+        }
+
+        // -------------------- 工具函数：保存用户数据 --------------------
+        function saveUserData() {
+            const accounts = JSON.parse(localStorage.getItem('coupleAccounts')) || [];
+            const accountIndex = accounts.findIndex(acc => acc.userName === currentUser.userName);
+            if (accountIndex !== -1) {
+                accounts[accountIndex].data = userData;
+                localStorage.setItem('coupleAccounts', JSON.stringify(accounts));
+            }
         }
     </script>
 </body>
