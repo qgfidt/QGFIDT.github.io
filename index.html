@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" class="light-theme">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -18,7 +18,14 @@
                         dark: '#2d3748',
                         light: '#f8f9fa',
                         calendar: '#ffc0cb',
-                        music: '#dcdcdc'
+                        calendar-dark: '#4a2c2a',
+                        music: '#dcdcdc',
+                        music-dark: '#333333',
+                        nfc: '#4ecdc4',
+                        nfc-active: '#38b2ac',
+                        dark-bg: '#1a1a2e',
+                        dark-card: '#24243e',
+                        dark-text: '#e0e0e0'
                     },
                     fontFamily: {
                         sans: ['Inter', 'system-ui', 'sans-serif'],
@@ -33,21 +40,85 @@
             .module-hover { @apply transition-all duration-300 hover:shadow-lg hover:-translate-y-1; }
             .nfc-hover { @apply transition-all duration-500 hover:scale-105 hover:shadow-xl; }
             .bg-gradient-couple { @apply bg-gradient-to-br from-primary/10 to-secondary/10; }
+            .bg-gradient-couple-dark { @apply bg-gradient-to-br from-primary/20 to-secondary/20; }
             .calendar-day { @apply w-8 h-8 flex items-center justify-center rounded-full hover:bg-primary/10 cursor-pointer; }
+            .calendar-day-dark { @apply w-8 h-8 flex items-center justify-center rounded-full hover:bg-primary/20 cursor-pointer; }
             .calendar-day-marked { @apply bg-primary/20 text-primary font-medium; }
+            .calendar-day-marked-dark { @apply bg-primary/30 text-primary font-medium; }
             .music-card { @apply w-16 h-16 rounded-lg flex items-center justify-center cursor-pointer hover:bg-white/50 transition-colors; }
+            .music-card-dark { @apply w-16 h-16 rounded-lg flex items-center justify-center cursor-pointer hover:bg-dark/50 transition-colors; }
+            .report-card { @apply bg-white rounded-xl p-4 shadow-sm module-hover; }
+            .report-card-dark { @apply bg-dark-card rounded-xl p-4 shadow-sm module-hover; }
+            .nfc-pulse { @apply animate-ping absolute inset-0 rounded-full bg-nfc/30 pointer-events-none; }
+            .nfc-pulse-dark { @apply animate-ping absolute inset-0 rounded-full bg-nfc/40 pointer-events-none; }
+            .nfc-card { @apply relative w-full h-full flex flex-col items-center justify-center rounded-2xl border-2 border-nfc transition-all duration-500; }
+            .nfc-card-dark { @apply relative w-full h-full flex flex-col items-center justify-center rounded-2xl border-2 border-nfc transition-all duration-500; }
+            .nfc-card-active { @apply border-nfc-active bg-nfc/10; }
+            .nfc-card-active-dark { @apply border-nfc-active bg-nfc/20; }
+        }
+
+        /* 基础主题样式 */
+        .light-theme {
+            --bg-color: #fff5e6;
+            --card-bg: #ffffff;
+            --text-color: #2d3748;
+            --text-gray: #6b7280;
+            --border-color: #e5e7eb;
+            --calendar-bg: #ffc0cb;
+            --music-bg: #dcdcdc;
+        }
+
+        .dark-theme {
+            --bg-color: #1a1a2e;
+            --card-bg: #24243e;
+            --text-color: #e0e0e0;
+            --text-gray: #a0a0c0;
+            --border-color: #3a3a5c;
+            --calendar-bg: #4a2c2a;
+            --music-bg: #333333;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        .card-bg {
+            background-color: var(--card-bg);
+            transition: background-color 0.3s ease;
+        }
+
+        .text-gray {
+            color: var(--text-gray);
+            transition: color 0.3s ease;
+        }
+
+        .border-color {
+            border-color: var(--border-color);
+            transition: border-color 0.3s ease;
+        }
+
+        .calendar-bg {
+            background-color: var(--calendar-bg);
+            transition: background-color 0.3s ease;
+        }
+
+        .music-bg {
+            background-color: var(--music-bg);
+            transition: background-color 0.3s ease;
         }
     </style>
 </head>
-<body class="bg-[#fff5e6] min-h-screen font-sans text-dark">
-    <nav class="bg-white shadow-sm sticky top-0 z-50">
+<body class="min-h-screen font-sans">
+    <nav class="card-bg shadow-sm sticky top-0 z-50">
         <div class="container mx-auto px-4 py-3 flex justify-between items-center">
             <h1 class="text-[clamp(1.5rem,3vw,2rem)] font-bold text-primary flex items-center">
                 <i class="fa fa-heart mr-2 animate-pulse"></i>情侣空间
             </h1>
             <div class="flex items-center gap-4">
-                <button id="themeToggle" class="p-2 rounded-full hover:bg-gray-100">
-                    <i class="fa fa-moon-o text-dark"></i>
+                <button id="themeToggle" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-dark/50 transition-colors">
+                    <i class="fa fa-moon-o text-dark dark:text-light" id="themeIcon"></i>
                 </button>
                 <button id="reportBtn" class="px-4 py-2 bg-primary text-white rounded-full hover:bg-primary/90 transition-colors">
                     <i class="fa fa-bar-chart mr-1"></i> 数据报告
@@ -56,31 +127,121 @@
         </div>
     </nav>
 
+    <!-- 数据报告弹窗（默认隐藏） -->
+    <div id="reportModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden">
+        <div class="card-bg rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto p-6">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-primary">情侣互动数据报告</h2>
+                <button id="closeReport" class="text-gray-500 hover:text-dark dark:text-gray-400 dark:hover:text-light">
+                    <i class="fa fa-times text-xl"></i>
+                </button>
+            </div>
+
+            <!-- 报告概览 -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div class="report-card dark:report-card-dark">
+                    <div class="text-sm text-gray-500 dark:text-gray-400">在一起时长</div>
+                    <div class="text-2xl font-bold text-primary" id="reportDays">1208 天</div>
+                </div>
+                <div class="report-card dark:report-card-dark">
+                    <div class="text-sm text-gray-500 dark:text-gray-400">日记记录数</div>
+                    <div class="text-2xl font-bold text-secondary" id="reportDiaryCount">42 篇</div>
+                </div>
+                <div class="report-card dark:report-card-dark">
+                    <div class="text-sm text-gray-500 dark:text-gray-400">情绪匹配度</div>
+                    <div class="text-2xl font-bold text-accent" id="reportMoodMatch">89%</div>
+                </div>
+            </div>
+
+            <!-- 互动频率图表 -->
+            <div class="report-card dark:report-card-dark mb-6">
+                <h3 class="font-semibold mb-3">每周互动频率</h3>
+                <div class="h-60">
+                    <canvas id="interactionChart"></canvas>
+                </div>
+            </div>
+
+            <!-- 情绪变化图表 -->
+            <div class="report-card dark:report-card-dark mb-6">
+                <h3 class="font-semibold mb-3">双方情绪变化趋势</h3>
+                <div class="h-60">
+                    <canvas id="moodTrendChart"></canvas>
+                </div>
+            </div>
+
+            <!-- 数据导出按钮 -->
+            <div class="text-center mt-6">
+                <button id="exportReport" class="px-6 py-2 bg-secondary text-white rounded-full hover:bg-secondary/90 transition-colors">
+                    <i class="fa fa-download mr-1"></i> 导出数据报告
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- NFC互动反馈弹窗（默认隐藏） -->
+    <div id="nfcFeedbackModal" class="fixed inset-0 bg-black/30 z-50 flex items-center justify-center hidden">
+        <div class="card-bg rounded-2xl p-8 max-w-md w-full text-center">
+            <div class="w-20 h-20 bg-nfc/20 dark:bg-nfc/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="fa fa-heart text-4xl text-nfc-active animate-pulse"></i>
+            </div>
+            <h3 class="text-xl font-bold text-dark dark:text-light mb-2" id="nfcFeedbackTitle">触碰成功！</h3>
+            <p class="text-gray-600 dark:text-gray-400 mb-6" id="nfcFeedbackDesc">你们的心意已传递，情感值+10～</p>
+            <button id="closeNfcFeedback" class="px-6 py-2 bg-primary text-white rounded-full hover:bg-primary/90 transition-colors">
+                确认
+            </button>
+        </div>
+    </div>
+
+    <!-- 纪念日设置弹窗（默认隐藏） -->
+    <div id="anniversaryModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden">
+        <div class="card-bg rounded-2xl p-6 max-w-md w-full">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-primary">设置纪念日</h3>
+                <button id="closeAnniversaryModal" class="text-gray-500 hover:text-dark dark:text-gray-400 dark:hover:text-light">
+                    <i class="fa fa-times"></i>
+                </button>
+            </div>
+            <div class="mb-4">
+                <label class="block text-sm text-gray-600 dark:text-gray-400 mb-2">选择纪念日日期</label>
+                <input type="date" id="anniversaryDate" class="w-full border border-gray-200 dark:border-gray-600 dark:bg-dark-card rounded-lg px-3 py-2 focus:border-primary focus:outline-none dark:text-light">
+            </div>
+            <div class="mb-6">
+                <label class="block text-sm text-gray-600 dark:text-gray-400 mb-2">纪念日名称</label>
+                <input type="text" id="anniversaryName" placeholder="例如：在一起的日子" class="w-full border border-gray-200 dark:border-gray-600 dark:bg-dark-card rounded-lg px-3 py-2 focus:border-primary focus:outline-none dark:text-light">
+            </div>
+            <button id="saveAnniversary" class="w-full py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors">
+                保存设置
+            </button>
+        </div>
+    </div>
+
     <main class="container mx-auto px-4 py-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <!-- 1. 头像与昵称模块 -->
-        <section class="bg-white rounded-2xl shadow p-4 module-hover col-span-2">
+        <section class="card-bg rounded-2xl shadow p-4 module-hover col-span-2">
             <div class="flex justify-between items-center">
                 <div class="flex flex-col items-center">
-                    <div class="w-20 h-20 rounded-full overflow-hidden border-3 border-blue-500 bg-blue-100">
-                        <img src="https://picsum.photos/200/200?random=1" alt="情侣头像" class="w-full h-full object-cover">
-                    </div>
-                    <div class="mt-2 text-sm">
-                        <span class="text-blue-500 font-medium">俥侣</span>
-                        <div class="w-20 h-1 bg-gray-200 rounded-full mt-1">
-                            <div class="w-10 h-1 bg-blue-500 rounded-full"></div>
+                    <label for="avatar1" class="relative cursor-pointer">
+                        <div class="w-20 h-20 rounded-full overflow-hidden border-3 border-blue-500 bg-blue-100 dark:bg-blue-900/30">
+                            <img id="avatarImg1" src="https://picsum.photos/200/200?random=1" alt="情侣头像" class="w-full h-full object-cover">
                         </div>
-                    </div>
+                        <input type="file" id="avatar1" class="hidden" accept="image/*">
+                        <span class="absolute bottom-0 right-0 bg-blue-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">
+                            <i class="fa fa-edit"></i>
+                        </span>
+                    </label>
+                    <input type="text" id="nickname1" value="俥侣" class="mt-2 text-sm border-b border-gray-200 dark:border-gray-600 focus:border-blue-500 focus:outline-none text-center dark:text-light">
                 </div>
                 <div class="flex flex-col items-center">
-                    <div class="w-20 h-20 rounded-full overflow-hidden border-3 border-pink-500 bg-pink-100">
-                        <img src="https://picsum.photos/200/200?random=2" alt="情侣头像" class="w-full h-full object-cover">
-                    </div>
-                    <div class="mt-2 text-sm">
-                        <span class="text-pink-500 font-medium">天男</span>
-                        <div class="w-20 h-1 bg-gray-200 rounded-full mt-1">
-                            <div class="w-5 h-1 bg-pink-500 rounded-full"></div>
+                    <label for="avatar2" class="relative cursor-pointer">
+                        <div class="w-20 h-20 rounded-full overflow-hidden border-3 border-pink-500 bg-pink-100 dark:bg-pink-900/30">
+                            <img id="avatarImg2" src="https://picsum.photos/200/200?random=2" alt="情侣头像" class="w-full h-full object-cover">
                         </div>
-                    </div>
+                        <input type="file" id="avatar2" class="hidden" accept="image/*">
+                        <span class="absolute bottom-0 right-0 bg-pink-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">
+                            <i class="fa fa-edit"></i>
+                        </span>
+                    </label>
+                    <input type="text" id="nickname2" value="天男" class="mt-2 text-sm border-b border-gray-200 dark:border-gray-600 focus:border-pink-500 focus:outline-none text-center dark:text-light">
                 </div>
             </div>
         </section>
@@ -88,163 +249,669 @@
         <!-- 2. 日期与计时模块 -->
         <section class="bg-[#d29967] rounded-2xl shadow p-4 module-hover text-white text-center">
             <div class="flex justify-center gap-1 text-3xl font-bold">
-                <div class="bg-white text-[#d29967] w-12 h-16 flex items-center justify-center rounded">12</div>
-                <div class="bg-white text-[#d29967] w-12 h-16 flex items-center justify-center rounded">08</div>
+                <div class="bg-white text-[#d29967] w-12 h-16 flex items-center justify-center rounded" id="currentMonth">12</div>
+                <div class="bg-white text-[#d29967] w-12 h-16 flex items-center justify-center rounded" id="currentDay">08</div>
             </div>
             <div class="text-sm mt-2">当前日期</div>
+            <div class="mt-3 text-xs bg-white/20 rounded-full px-3 py-1 inline-block" id="anniversaryText">
+                距离在一起还有 30 天
+            </div>
         </section>
 
         <!-- 3. 日历模块 -->
-        <section class="bg-calendar rounded-2xl shadow p-4 module-hover relative">
+        <section class="calendar-bg rounded-2xl shadow p-4 module-hover relative">
             <div class="absolute top-2 right-2">
                 <div class="w-10 h-10 bg-yellow-400 rounded-full flex items-center justify-center shadow-md">
                     <i class="fa fa-bell text-white"></i>
                 </div>
             </div>
-            <div class="grid grid-cols-7 gap-1 mt-4 text-xs">
-                <div class="calendar-day">7</div>
-                <div class="calendar-day">8</div>
-                <div class="calendar-day">10</div>
-                <div class="calendar-day">14</div>
-                <div class="calendar-day">16</div>
-                <div class="calendar-day">11</div>
-                <div class="calendar-day">12</div>
-                <div class="calendar-day">5</div>
-                <div class="calendar-day calendar-day-marked">10</div>
-                <div class="calendar-day">14</div>
-                <div class="calendar-day">16</div>
-                <div class="calendar-day">11</div>
-                <div class="calendar-day">12</div>
-                <div class="calendar-day">19</div>
-                <div class="calendar-day">13</div>
-                <div class="calendar-day">14</div>
-                <div class="calendar-day calendar-day-marked">18</div>
-                <div class="calendar-day">16</div>
-                <div class="calendar-day calendar-day-marked relative">
+            <div class="grid grid-cols-7 gap-1 mt-4 text-xs" id="calendarGrid">
+                <div class="calendar-day dark:calendar-day-dark">7</div>
+                <div class="calendar-day dark:calendar-day-dark">8</div>
+                <div class="calendar-day dark:calendar-day-dark">10</div>
+                <div class="calendar-day dark:calendar-day-dark">14</div>
+                <div class="calendar-day dark:calendar-day-dark">16</div>
+                <div class="calendar-day dark:calendar-day-dark">11</div>
+                <div class="calendar-day dark:calendar-day-dark">12</div>
+                <div class="calendar-day dark:calendar-day-dark">5</div>
+                <div class="calendar-day calendar-day-marked dark:calendar-day-dark dark:calendar-day-marked-dark">10</div>
+                <div class="calendar-day dark:calendar-day-dark">14</div>
+                <div class="calendar-day dark:calendar-day-dark">16</div>
+                <div class="calendar-day dark:calendar-day-dark">11</div>
+                <div class="calendar-day dark:calendar-day-dark">12</div>
+                <div class="calendar-day dark:calendar-day-dark">19</div>
+                <div class="calendar-day dark:calendar-day-dark">13</div>
+                <div class="calendar-day dark:calendar-day-dark">14</div>
+                <div class="calendar-day calendar-day-marked dark:calendar-day-dark dark:calendar-day-marked-dark">18</div>
+                <div class="calendar-day dark:calendar-day-dark">16</div>
+                <div class="calendar-day calendar-day-marked relative dark:calendar-day-dark dark:calendar-day-marked-dark">
                     19
                     <div class="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></div>
                 </div>
-                <div class="calendar-day">29</div>
-                <div class="calendar-day">20</div>
-                <div class="calendar-day">22</div>
-                <div class="calendar-day">27</div>
-                <div class="calendar-day">30</div>
+                <div class="calendar-day dark:calendar-day-dark">29</div>
+                <div class="calendar-day dark:calendar-day-dark">20</div>
+                <div class="calendar-day dark:calendar-day-dark">22</div>
+                <div class="calendar-day dark:calendar-day-dark">27</div>
+                <div class="calendar-day dark:calendar-day-dark">30</div>
             </div>
         </section>
 
         <!-- 4. 日记模块 -->
-        <section class="bg-white rounded-2xl shadow p-4 module-hover col-span-2">
-            <div class="h-40 overflow-y-auto p-2">
-                <p class="text-pink-500 font-medium">My Bin!</p>
-                <p class="text-sm mt-1">I want to the<br>
-                report time to<br>
-                down, family.<br><br>
-                Then to go to,<br>
-                this to the place<br>
-                for you, iuj.</p>
+        <section class="card-bg rounded-2xl shadow p-4 module-hover col-span-2">
+            <div class="flex justify-between items-center mb-3">
+                <div id="diaryDate" class="text-gray-600 dark:text-gray-400">2025年12月1日</div>
+                <button id="toggleDiaryDate" class="text-sm text-gray-500 hover:text-primary dark:text-gray-400 dark:hover:text-primary">
+                    <i class="fa fa-calendar-o mr-1"></i> 切换日期
+                </button>
             </div>
-            <button class="mt-2 text-xs text-primary hover:text-primary/80 flex items-center">
-                <i class="fa fa-edit mr-1"></i> 编辑日记
-            </button>
+            <div id="diaryContent" class="h-40 overflow-y-auto p-3 bg-gray-50 dark:bg-dark/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/30 dark:text-light" contenteditable="true">
+                今天和TA一起去了喜欢的餐厅，聊了很多未来的计划～ 希望我们永远这么幸福呀！❤️
+            </div>
+            <div class="flex justify-end mt-3">
+                <button id="saveDiary" class="px-4 py-1 bg-primary text-white rounded-full hover:bg-primary/90 transition-colors text-sm">
+                    <i class="fa fa-save mr-1"></i> 保存日记
+                </button>
+            </div>
         </section>
 
         <!-- 5. 情侣纪念/目标模块 -->
-        <section class="bg-white rounded-2xl shadow p-4 module-hover col-span-2">
+        <section class="card-bg rounded-2xl shadow p-4 module-hover col-span-2">
             <div class="relative h-40 rounded-xl overflow-hidden">
-                <img src="https://picsum.photos/800/400?random=3" alt="情侣纪念" class="w-full h-full object-cover">
+                <img id="memorialImg" src="https://picsum.photos/800/400?random=3" alt="情侣纪念" class="w-full h-full object-cover">
+                <label for="uploadMemorialImg" class="absolute bottom-3 right-3 bg-black/50 text-white rounded-full w-10 h-10 flex items-center justify-center cursor-pointer hover:bg-black/70 transition-colors">
+                    <i class="fa fa-upload"></i>
+                    <input type="file" id="uploadMemorialImg" class="hidden" accept="image/*">
+                </label>
                 <div class="absolute inset-0 bg-black/30 flex flex-col items-center justify-center text-white">
-                    <div class="text-lg font-medium">情侣纪念</div>
-                    <div class="text-sm">情侣共同目标</div>
+                    <div class="text-lg font-medium" id="memorialTitle">情侣纪念</div>
+                    <div class="text-sm" id="memorialDesc">情侣共同目标</div>
                 </div>
             </div>
-            <div class="mt-2 text-center">
-                <button class="text-sm text-secondary hover:text-secondary/80">
-                    <i class="fa fa-pencil mr-1"></i> 编辑目标
+            <div class="mt-3 flex justify-center gap-4">
+                <button id="editMemorialTitle" class="text-sm text-secondary hover:text-secondary/80 dark:text-secondary dark:hover:text-secondary/80">
+                    <i class="fa fa-pencil mr-1"></i> 编辑标题
+                </button>
+                <button id="editMemorialDesc" class="text-sm text-secondary hover:text-secondary/80 dark:text-secondary dark:hover:text-secondary/80">
+                    <i class="fa fa-pencil mr-1"></i> 编辑描述
                 </button>
             </div>
         </section>
 
         <!-- 6. 情绪仪表盘模块 -->
-        <section class="bg-yellow-300 rounded-2xl shadow p-4 module-hover">
+        <section class="bg-yellow-300 dark:bg-yellow-900/30 rounded-2xl shadow p-4 module-hover">
             <div class="w-full h-32">
                 <canvas id="moodChart"></canvas>
             </div>
             <div class="mt-2 flex justify-center">
-                <div class="w-16 h-8 bg-white rounded flex items-center justify-center">
-                    <i class="fa fa-music text-black"></i>
+                <div class="w-16 h-8 bg-white dark:bg-dark-card rounded flex items-center justify-center">
+                    <i class="fa fa-music text-black dark:text-light"></i>
                 </div>
             </div>
         </section>
 
         <!-- 7. 音乐切换模块 -->
-        <section class="bg-music rounded-2xl shadow p-4 module-hover">
+        <section class="music-bg rounded-2xl shadow p-4 module-hover">
             <div class="flex justify-between items-center text-sm mb-2">
-                <span>Music switcher</span>
+                <span class="dark:text-light">Music switcher</span>
                 <div class="flex gap-1">
-                    <i class="fa fa-ellipsis-v"></i>
+                    <i class="fa fa-ellipsis-v dark:text-light"></i>
                 </div>
             </div>
-            <div class="grid grid-cols-3 gap-2">
-                <div class="music-card bg-gray-300"></div>
-                <div class="music-card bg-blue-500">
+            <div class="grid grid-cols-3 gap-2" id="musicGrid">
+                <div class="music-card dark:music-card-dark bg-gray-300 dark:bg-gray-700"></div>
+                <div class="music-card dark:music-card-dark bg-blue-500">
                     <i class="fa fa-play text-white"></i>
                 </div>
-                <div class="music-card bg-orange-500"></div>
-                <div class="music-card bg-teal-500"></div>
-                <div class="music-card bg-white">
-                    <i class="fa fa-book text-gray-500"></i>
+                <div class="music-card dark:music-card-dark bg-orange-500"></div>
+                <div class="music-card dark:music-card-dark bg-teal-500"></div>
+                <div class="music-card dark:music-card-dark bg-white dark:bg-dark-card">
+                    <i class="fa fa-book text-gray-500 dark:text-gray-400"></i>
                 </div>
-                <div class="music-card bg-pink-300 flex-col">
-                    <div class="w-4 h-2 bg-white"></div>
-                    <div class="w-4 h-2 bg-white mt-1"></div>
+                <div class="music-card dark:music-card-dark bg-pink-300 dark:bg-pink-900/50 flex-col">
+                    <div class="w-4 h-2 bg-white dark:bg-light"></div>
+                    <div class="w-4 h-2 bg-white dark:bg-light mt-1"></div>
                 </div>
             </div>
             <div class="mt-2 flex justify-center">
-                <button class="w-8 h-8 bg-white rounded-full flex items-center justify-center">
-                    <i class="fa fa-play text-sm"></i>
+                <button class="w-8 h-8 bg-white dark:bg-dark-card rounded-full flex items-center justify-center">
+                    <i class="fa fa-play text-sm dark:text-light"></i>
                 </button>
             </div>
         </section>
 
         <!-- 8. NFC功能模块 -->
-        <section class="bg-white rounded-2xl shadow p-4 module-hover col-span-1 flex items-center justify-center">
-            <div class="flex items-center gap-2">
-                <span class="text-sm">NFC tack</span>
-                <button class="p-1 bg-gray-200 rounded">
-                    <i class="fa fa-search text-xs"></i>
-                </button>
+        <section class="card-bg rounded-2xl shadow p-4 module-hover col-span-1 flex items-center justify-center">
+            <div class="nfc-card dark:nfc-card-dark" id="nfcCard">
+                <div class="nfc-pulse dark:nfc-pulse-dark hidden" id="nfcPulse"></div>
+                <i class="fa fa-hand-pointer-o text-2xl text-nfc mb-2"></i>
+                <span class="text-sm font-medium text-nfc dark:text-nfc">NFC 触碰互动</span>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">点击模拟设备触碰</p>
             </div>
         </section>
     </main>
 
     <script>
-        // 情绪仪表盘图表
-        const moodCtx = document.getElementById('moodChart').getContext('2d');
-        new Chart(moodCtx, {
-            type: 'gauge',
-            data: {
-                datasets: [{
-                    value: 80,
-                    data: [0, 100],
-                    backgroundColor: ['#ff6b6b', '#4ecdc4'],
-                    borderWidth: 0
-                }]
-            },
-            options: {
-                plugins: {
-                    tooltip: { enabled: false }
+        // 初始化本地存储数据结构
+        const initLocalStorage = () => {
+            const defaultData = {
+                user1: {
+                    nickname: '俥侣',
+                    avatar: 'https://picsum.photos/200/200?random=1'
+                },
+                user2: {
+                    nickname: '天男',
+                    avatar: 'https://picsum.photos/200/200?random=2'
+                },
+                anniversary: {
+                    date: '',
+                    name: '在一起的日子',
+                    days: 0
+                },
+                diary: [{
+                    date: new Date().toLocaleDateString(),
+                    content: '今天和TA一起去了喜欢的餐厅，聊了很多未来的计划～ 希望我们永远这么幸福呀！❤️'
+                }],
+                memorial: {
+                    title: '情侣纪念',
+                    desc: '情侣共同目标',
+                    img: 'https://picsum.photos/800/400?random=3'
+                },
+                interactionData: {
+                    nfcCount: 0,
+                    diaryCount: 1,
+                    moodMatch: 89
+                },
+                theme: 'light' // 默认亮色主题
+            };
+
+            // 如果本地存储无数据，初始化默认数据
+            if (!localStorage.getItem('coupleSpaceData')) {
+                localStorage.setItem('coupleSpaceData', JSON.stringify(defaultData));
+            }
+        };
+
+        // 获取本地存储数据
+        const getLocalData = () => {
+            return JSON.parse(localStorage.getItem('coupleSpaceData')) || {};
+        };
+
+        // 保存数据到本地存储
+        const saveLocalData = (data) => {
+            localStorage.setItem('coupleSpaceData', JSON.stringify(data));
+        };
+
+        // 初始化主题
+        const initTheme = () => {
+            const data = getLocalData();
+            const theme = data.theme || 'light';
+            document.documentElement.classList.toggle('dark-theme', theme === 'dark');
+            updateThemeIcon(theme);
+            // 初始化图表主题（Chart.js需要单独处理）
+            Chart.defaults.color = theme === 'dark' ? '#e0e0e0' : '#2d3748';
+            Chart.defaults.borderColor = theme === 'dark' ? '#3a3a5c' : '#e5e7eb';
+        };
+
+        // 更新主题图标
+        const updateThemeIcon = (theme) => {
+            const themeIcon = document.getElementById('themeIcon');
+            if (theme === 'dark') {
+                themeIcon.classList.remove('fa-moon-o');
+                themeIcon.classList.add('fa-sun-o');
+                themeIcon.classList.remove('text-dark');
+                themeIcon.classList.add('text-light');
+            } else {
+                themeIcon.classList.remove('fa-sun-o');
+                themeIcon.classList.add('fa-moon-o');
+                themeIcon.classList.remove('text-light');
+                themeIcon.classList.add('text-dark');
+            }
+        };
+
+        // 切换主题
+        const toggleTheme = () => {
+            const data = getLocalData();
+            const newTheme = data.theme === 'dark' ? 'light' : 'dark';
+            data.theme = newTheme;
+            saveLocalData(data);
+            document.documentElement.classList.toggle('dark-theme', newTheme === 'dark');
+            updateThemeIcon(newTheme);
+            // 重新渲染图表以适配主题
+            initMoodChart();
+            if (!reportModal.classList.contains('hidden')) {
+                initReportCharts();
+            }
+        };
+
+        // 页面加载时初始化
+        window.addEventListener('DOMContentLoaded', () => {
+            initLocalStorage();
+            initTheme();
+            loadLocalDataToPage();
+            initMoodChart();
+            updateCurrentDate();
+            calculateAnniversaryDays();
+        });
+
+        // 加载本地数据到页面
+        const loadLocalDataToPage = () => {
+            const data = getLocalData();
+
+            // 加载用户信息
+            document.getElementById('nickname1').value = data.user1?.nickname || '俥侣';
+            document.getElementById('nickname2').value = data.user2?.nickname || '天男';
+            document.getElementById('avatarImg1').src = data.user1?.avatar || 'https://picsum.photos/200/200?random=1';
+            document.getElementById('avatarImg2').src = data.user2?.avatar || 'https://picsum.photos/200/200?random=2';
+
+            // 加载日记数据
+            const latestDiary = data.diary?.[0] || {};
+            document.getElementById('diaryDate').textContent = formatDate(latestDiary.date);
+            document.getElementById('diaryContent').innerHTML = latestDiary.content || '';
+
+            // 加载纪念模块数据
+            document.getElementById('memorialTitle').textContent = data.memorial?.title || '情侣纪念';
+            document.getElementById('memorialDesc').textContent = data.memorial?.desc || '情侣共同目标';
+            document.getElementById('memorialImg').src = data.memorial?.img || 'https://picsum.photos/800/400?random=3';
+
+            // 加载纪念日数据
+            document.getElementById('anniversaryName').value = data.anniversary?.name || '在一起的日子';
+            if (data.anniversary?.date) {
+                document.getElementById('anniversaryDate').value = data.anniversary.date;
+            }
+
+            // 加载数据报告数据
+            document.getElementById('reportDays').textContent = data.anniversary?.days || 0 + ' 天';
+            document.getElementById('reportDiaryCount').textContent = data.interactionData?.diaryCount || 0 + ' 篇';
+            document.getElementById('reportMoodMatch').textContent = data.interactionData?.moodMatch || 89 + '%';
+        };
+
+        // 初始化情绪图表
+        const initMoodChart = () => {
+            const moodCtx = document.getElementById('moodChart').getContext('2d');
+            // 销毁已存在的图表
+            if (window.moodChartInstance) {
+                window.moodChartInstance.destroy();
+            }
+            // 判断当前主题
+            const isDark = document.documentElement.classList.contains('dark-theme');
+            window.moodChartInstance = new Chart(moodCtx, {
+                type: 'doughnut',
+                data: {
+                    datasets: [{
+                        data: [80, 20],
+                        backgroundColor: ['#4ecdc4', isDark ? '#3a1c1a' : '#ff6b6b'],
+                        borderWidth: 0,
+                        cutout: '70%'
+                    }]
+                },
+                options: {
+                    plugins: {
+                        tooltip: { enabled: false },
+                        legend: { display: false }
+                    }
                 }
+            });
+        };
+
+        // 更新当前日期
+        const updateCurrentDate = () => {
+            const now = new Date();
+            document.getElementById('currentMonth').textContent = now.getMonth() + 1;
+            document.getElementById('currentDay').textContent = now.getDate().toString().padStart(2, '0');
+            document.getElementById('diaryDate').textContent = formatDate(now.toLocaleDateString());
+        };
+
+        // 计算纪念日天数
+        const calculateAnniversaryDays = () => {
+            const data = getLocalData();
+            const anniversaryDate = data.anniversary?.date;
+            if (!anniversaryDate) return;
+
+            const anniversary = new Date(anniversaryDate);
+            const now = new Date();
+            const timeDiff = Math.abs(now - anniversary);
+            const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+
+            // 更新纪念日天数
+            data.anniversary.days = days;
+            saveLocalData(data);
+
+            // 更新页面显示
+            document.getElementById('anniversaryText').textContent = `在一起 ${days} 天`;
+            document.getElementById('reportDays').textContent = days + ' 天';
+        };
+
+        // 日期格式化
+        const formatDate = (dateStr) => {
+            const date = new Date(dateStr);
+            return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`;
+        };
+
+        // 头像上传与保存
+        document.getElementById('avatar1').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const data = getLocalData();
+                    data.user1.avatar = event.target.result;
+                    saveLocalData(data);
+                    document.getElementById('avatarImg1').src = event.target.result;
+                };
+                reader.readAsDataURL(file);
             }
         });
 
-        // 基础交互逻辑
-        document.getElementById('saveDiary').addEventListener('click', () => {
-            alert('日记已保存！');
+        document.getElementById('avatar2').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const data = getLocalData();
+                    data.user2.avatar = event.target.result;
+                    saveLocalData(data);
+                    document.getElementById('avatarImg2').src = event.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
         });
 
-        document.getElementById('editAnniversary').addEventListener('click', () => {
-            alert('可在此设置纪念日～');
+        // 昵称保存
+        document.getElementById('nickname1').addEventListener('blur', () => {
+            const data = getLocalData();
+            data.user1.nickname = document.getElementById('nickname1').value;
+            saveLocalData(data);
         });
+
+        document.getElementById('nickname2').addEventListener('blur', () => {
+            const data = getLocalData();
+            data.user2.nickname = document.getElementById('nickname2').value;
+            saveLocalData(data);
+        });
+
+        // 日记保存
+        document.getElementById('saveDiary').addEventListener('click', () => {
+            const data = getLocalData();
+            const content = document.getElementById('diaryContent').innerHTML;
+            const date = new Date().toLocaleDateString();
+
+            // 更新日记数据
+            data.diary.unshift({ date, content });
+            data.interactionData.diaryCount = data.diary.length;
+            saveLocalData(data);
+
+            // 更新页面与报告数据
+            document.getElementById('reportDiaryCount').textContent = data.diary.length + ' 篇';
+            alert('日记保存成功！');
+        });
+
+        // 纪念日设置
+        document.querySelector('button:has(.fa-pencil):nth-child(2)').addEventListener('click', () => {
+            document.getElementById('anniversaryModal').classList.remove('hidden');
+        });
+
+        document.getElementById('closeAnniversaryModal').addEventListener('click', () => {
+            document.getElementById('anniversaryModal').classList.add('hidden');
+        });
+
+        document.getElementById('saveAnniversary').addEventListener('click', () => {
+            const date = document.getElementById('anniversaryDate').value;
+            const name = document.getElementById('anniversaryName').value;
+            if (!date) {
+                alert('请选择纪念日日期');
+                return;
+            }
+
+            const data = getLocalData();
+            data.anniversary.date = date;
+            data.anniversary.name = name;
+            saveLocalData(data);
+
+            calculateAnniversaryDays();
+            document.getElementById('anniversaryModal').classList.add('hidden');
+            alert('纪念日设置成功！');
+        });
+
+        // 纪念模块编辑
+        document.getElementById('editMemorialTitle').addEventListener('click', () => {
+            const newTitle = prompt('请输入新的纪念标题', document.getElementById('memorialTitle').textContent);
+            if (newTitle) {
+                const data = getLocalData();
+                data.memorial.title = newTitle;
+                saveLocalData(data);
+                document.getElementById('memorialTitle').textContent = newTitle;
+            }
+        });
+
+        document.getElementById('editMemorialDesc').addEventListener('click', () => {
+            const newDesc = prompt('请输入新的纪念描述', document.getElementById('memorialDesc').textContent);
+            if (newDesc) {
+                const data = getLocalData();
+                data.memorial.desc = newDesc;
+                saveLocalData(data);
+                document.getElementById('memorialDesc').textContent = newDesc;
+            }
+        });
+
+        document.getElementById('uploadMemorialImg').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const data = getLocalData();
+                    data.memorial.img = event.target.result;
+                    saveLocalData(data);
+                    document.getElementById('memorialImg').src = event.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // 数据报告交互
+        const reportModal = document.getElementById('reportModal');
+        const reportBtn = document.getElementById('reportBtn');
+        const closeReport = document.getElementById('closeReport');
+        const exportReport = document.getElementById('exportReport');
+
+        reportBtn.addEventListener('click', () => {
+            reportModal.classList.remove('hidden');
+            initReportCharts();
+        });
+
+        closeReport.addEventListener('click', () => {
+            reportModal.classList.add('hidden');
+        });
+
+        window.addEventListener('click', (e) => {
+            if (e.target === reportModal) {
+                reportModal.classList.add('hidden');
+            }
+        });
+
+        exportReport.addEventListener('click', () => {
+            const data = getLocalData();
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = '情侣空间互动数据报告.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        });
+
+        // 初始化报告图表
+        function initReportCharts() {
+            const data = getLocalData();
+            const interactionData = data.interactionData || {};
+            const isDark = document.documentElement.classList.contains('dark-theme');
+
+            // 销毁已存在的图表
+            if (window.interactionChartInstance) {
+                window.interactionChartInstance.destroy();
+            }
+            if (window.moodTrendChartInstance) {
+                window.moodTrendChartInstance.destroy();
+            }
+
+            // 互动频率图表
+            const interactionCtx = document.getElementById('interactionChart').getContext('2d');
+            window.interactionChartInstance = new Chart(interactionCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['周一', '周二', '周三', '周四', '周五', '周六', '周日'],
+                    datasets: [{
+                        label: '互动次数',
+                        data: [3, 5, 2, 7, 4, 9, 12 + (interactionData.nfcCount || 0)],
+                        backgroundColor: '#ff6b8b',
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            grid: {
+                                color: isDark ? '#3a3a5c' : '#e5e7eb'
+                            }
+                        },
+                        y: {
+                            grid: {
+                                color: isDark ? '#3a3a5c' : '#e5e7eb'
+                            },
+                            ticks: {
+                                color: isDark ? '#e0e0e0' : '#2d3748'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: isDark ? '#e0e0e0' : '#2d3748'
+                            }
+                        }
+                    }
+                }
+            });
+
+            // 情绪趋势图表
+            const moodTrendCtx = document.getElementById('moodTrendChart').getContext('2d');
+            window.moodTrendChartInstance = new Chart(moodTrendCtx, {
+                type: 'line',
+                data: {
+                    labels: ['1月', '2月', '3月', '4月', '5月', '6月'],
+                    datasets: [
+                        {
+                            label: '俥侣情绪值',
+                            data: [70, 85, 60, 90, 80, interactionData.moodMatch || 89],
+                            borderColor: '#4299e1',
+                            backgroundColor: 'rgba(66, 153, 225, 0.1)',
+                            fill: true,
+                            tension: 0.3
+                        },
+                        {
+                            label: '天男情绪值',
+                            data: [65, 80, 75, 85, 90, interactionData.moodMatch || 89],
+                            borderColor: '#ed64a6',
+                            backgroundColor: 'rgba(237, 100, 166, 0.1)',
+                            fill: true,
+                            tension: 0.3
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            grid: {
+                                color: isDark ? '#3a3a5c' : '#e5e7eb'
+                            },
+                            ticks: {
+                                color: isDark ? '#e0e0e0' : '#2d3748'
+                            }
+                        },
+                        y: {
+                            grid: {
+                                color: isDark ? '#3a3a5c' : '#e5e7eb'
+                            },
+                            ticks: {
+                                color: isDark ? '#e0e0e0' : '#2d3748'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: isDark ? '#e0e0e0' : '#2d3748'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // NFC功能交互
+        const nfcCard = document.getElementById('nfcCard');
+        const nfcPulse = document.getElementById('nfcPulse');
+        const nfcFeedbackModal = document.getElementById('nfcFeedbackModal');
+        const closeNfcFeedback = document.getElementById('closeNfcFeedback');
+        const nfcFeedbackTitle = document.getElementById('nfcFeedbackTitle');
+        const nfcFeedbackDesc = document.getElementById('nfcFeedbackDesc');
+
+        nfcCard.addEventListener('click', () => {
+            nfcCard.classList.add('nfc-card-active', 'dark:nfc-card-active-dark');
+            nfcPulse.classList.remove('hidden');
+
+            setTimeout(() => {
+                const feedbacks = [
+                    { title: '触碰成功！', desc: '你们的心意已传递，情感值+10～' },
+                    { title: '甜蜜互动！', desc: 'TA感受到了你的思念，默契度+8～' },
+                    { title: '心有灵犀！', desc: '同时触碰的巧合，幸福值+15～' }
+                ];
+                const randomFeedback = feedbacks[Math.floor(Math.random() * feedbacks.length)];
+                nfcFeedbackTitle.textContent = randomFeedback.title;
+                nfcFeedbackDesc.textContent = randomFeedback.desc;
+
+                nfcFeedbackModal.classList.remove('hidden');
+                nfcCard.classList.remove('nfc-card-active', 'dark:nfc-card-active-dark');
+                nfcPulse.classList.add('hidden');
+
+                // 更新互动数据
+                updateInteractionData();
+            }, 1500);
+        });
+
+        closeNfcFeedback.addEventListener('click', () => {
+            nfcFeedbackModal.classList.add('hidden');
+        });
+
+        window.addEventListener('click', (e) => {
+            if (e.target === nfcFeedbackModal) {
+                nfcFeedbackModal.classList.add('hidden');
+            }
+        });
+
+        // 更新互动数据
+        function updateInteractionData() {
+            const data = getLocalData();
+            data.interactionData.nfcCount = (data.interactionData.nfcCount || 0) + 1;
+            // 每3次NFC互动增加1%情绪匹配度
+            if (data.interactionData.nfcCount % 3 === 0) {
+                data.interactionData.moodMatch = Math.min(100, (data.interactionData.moodMatch || 89) + 1);
+                document.getElementById('reportMoodMatch').textContent = data.interactionData.moodMatch + '%';
+            }
+            saveLocalData(data);
+        }
+
+        // 其他基础交互
+        document.querySelector('button:has(.fa-edit)').addEventListener('click', () => {
+            document.getElementById('diaryContent').focus();
+        });
+
+        // 主题切换按钮事件
+        document.getElementById('themeToggle').addEventListener('click', toggleTheme);
     </script>
 </body>
 </html>
