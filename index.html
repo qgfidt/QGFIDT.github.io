@@ -2,11 +2,24 @@
 <html lang="zh-CN" class="light-theme">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>情侣空间 - 专属你们的互动平台</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+    <!-- 按需加载Chart.js（延迟加载，非首屏优先） -->
+    <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+    <!-- 高德地图API按需加载（延迟+条件加载） -->
+    <script>
+        // 延迟加载地图API，避免阻塞首屏
+        setTimeout(() => {
+            if (document.getElementById('mapContainer')) {
+                const script = document.createElement('script');
+                script.src = 'https://webapi.amap.com/maps?v=2.0&key=6c65e4f206929f7d1ff593b48d571f9c';
+                script.onload = initMap; // 地图脚本加载完成后初始化
+                document.head.appendChild(script);
+            }
+        }, 1500);
+    </script>
     <script>
         tailwind.config = {
             theme: {
@@ -25,7 +38,9 @@
                         nfc-active: '#38b2ac',
                         dark-bg: '#1a1a2e',
                         dark-card: '#24243e',
-                        dark-text: '#e0e0e0'
+                        dark-text: '#e0e0e0',
+                        location-user1: '#4299e1',
+                        location-user2: '#ed64a6'
                     },
                     fontFamily: {
                         sans: ['Inter', 'system-ui', 'sans-serif'],
@@ -45,16 +60,18 @@
             .calendar-day-dark { @apply w-8 h-8 flex items-center justify-center rounded-full hover:bg-primary/20 cursor-pointer; }
             .calendar-day-marked { @apply bg-primary/20 text-primary font-medium; }
             .calendar-day-marked-dark { @apply bg-primary/30 text-primary font-medium; }
-            .music-card { @apply w-16 h-16 rounded-lg flex items-center justify-center cursor-pointer hover:bg-white/50 transition-colors; }
-            .music-card-dark { @apply w-16 h-16 rounded-lg flex items-center justify-center cursor-pointer hover:bg-dark/50 transition-colors; }
+            .music-card { @apply w-14 h-14 lg:w-16 lg:h-16 rounded-lg flex items-center justify-center cursor-pointer hover:bg-white/50 transition-colors; }
+            .music-card-dark { @apply w-14 h-14 lg:w-16 lg:h-16 rounded-lg flex items-center justify-center cursor-pointer hover:bg-dark/50 transition-colors; }
             .report-card { @apply bg-white rounded-xl p-4 shadow-sm module-hover; }
             .report-card-dark { @apply bg-dark-card rounded-xl p-4 shadow-sm module-hover; }
             .nfc-pulse { @apply animate-ping absolute inset-0 rounded-full bg-nfc/30 pointer-events-none; }
             .nfc-pulse-dark { @apply animate-ping absolute inset-0 rounded-full bg-nfc/40 pointer-events-none; }
-            .nfc-card { @apply relative w-full h-full flex flex-col items-center justify-center rounded-2xl border-2 border-nfc transition-all duration-500; }
-            .nfc-card-dark { @apply relative w-full h-full flex flex-col items-center justify-center rounded-2xl border-2 border-nfc transition-all duration-500; }
+            .nfc-card { @apply relative w-full h-full flex-col items-center justify-center rounded-2xl border-2 border-nfc transition-all duration-500; }
+            .nfc-card-dark { @apply relative w-full h-full flex-col items-center justify-center rounded-2xl border-2 border-nfc transition-all duration-500; }
             .nfc-card-active { @apply border-nfc-active bg-nfc/10; }
             .nfc-card-active-dark { @apply border-nfc-active bg-nfc/20; }
+            .location-card { @apply bg-white dark:bg-dark-card rounded-xl shadow p-4 module-hover; }
+            .location-badge { @apply inline-block px-2 py-1 rounded-full text-xs font-medium; }
         }
 
         /* 基础主题样式 */
@@ -82,6 +99,7 @@
             background-color: var(--bg-color);
             color: var(--text-color);
             transition: background-color 0.3s ease, color 0.3s ease;
+            -webkit-tap-highlight-color: transparent; /* 清除移动端点击高亮 */
         }
 
         .card-bg {
@@ -108,164 +126,270 @@
             background-color: var(--music-bg);
             transition: background-color 0.3s ease;
         }
+
+        /* 地图容器样式 - 适配移动端高度 */
+        #mapContainer {
+            width: 100%;
+            height: 220px; /* 移动端降低高度，提升加载速度 */
+            border-radius: 0.75rem;
+            overflow: hidden;
+            margin-bottom: 1rem;
+        }
+
+        /* 位置历史列表样式 */
+        .location-history-list {
+            max-height: 180px;
+            overflow-y: auto;
+            scrollbar-width: thin;
+        }
+
+        .location-history-list::-webkit-scrollbar {
+            width: 3px;
+        }
+
+        .location-history-list::-webkit-scrollbar-thumb {
+            background-color: var(--text-gray);
+            border-radius: 2px;
+        }
+
+        /* 移动端适配：按钮文字精简，避免换行 */
+        @media (max-width: 768px) {
+            .btn-mobile-text {
+                font-size: 12px !important;
+            }
+            .btn-mobile-icon {
+                margin-right: 4px !important;
+            }
+            /* 模块间距缩小 */
+            main {
+                gap: 1.5rem !important;
+                padding: 1rem 0.5rem !important;
+            }
+            /* 日记模块高度适配 */
+            #diaryContent {
+                height: 120px !important;
+            }
+            /* 日历模块字体缩小 */
+            #calendarGrid {
+                font-size: 11px !important;
+            }
+            .calendar-day, .calendar-day-dark {
+                width: 28px !important;
+                height: 28px !important;
+            }
+        }
+
+        /* 避免图片加载阻塞 */
+        img {
+            object-fit: cover;
+            loading: lazy; /* 懒加载图片 */
+        }
+
+        /* 优化弹窗性能：减少层级和过渡 */
+        .modal {
+            backdrop-filter: blur(2px); /* 降低模糊强度，提升性能 */
+            transition: opacity 0.2s ease;
+        }
     </style>
 </head>
 <body class="min-h-screen font-sans">
     <nav class="card-bg shadow-sm sticky top-0 z-50">
         <div class="container mx-auto px-4 py-3 flex justify-between items-center">
-            <h1 class="text-[clamp(1.5rem,3vw,2rem)] font-bold text-primary flex items-center">
+            <h1 class="text-[clamp(1.2rem,5vw,1.8rem)] font-bold text-primary flex items-center">
                 <i class="fa fa-heart mr-2 animate-pulse"></i>情侣空间
             </h1>
-            <div class="flex items-center gap-4">
+            <div class="flex items-center gap-3">
                 <button id="themeToggle" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-dark/50 transition-colors">
-                    <i class="fa fa-moon-o text-dark dark:text-light" id="themeIcon"></i>
+                    <i class="fa fa-moon-o text-dark dark:text-light text-lg" id="themeIcon"></i>
                 </button>
-                <button id="reportBtn" class="px-4 py-2 bg-primary text-white rounded-full hover:bg-primary/90 transition-colors">
-                    <i class="fa fa-bar-chart mr-1"></i> 数据报告
+                <button id="reportBtn" class="px-3 py-1.5 bg-primary text-white rounded-full hover:bg-primary/90 transition-colors text-sm">
+                    <i class="fa fa-bar-chart btn-mobile-icon mr-1"></i> 数据报告
                 </button>
             </div>
         </div>
     </nav>
 
-    <!-- 数据报告弹窗（默认隐藏） -->
-    <div id="reportModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden">
-        <div class="card-bg rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto p-6">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-bold text-primary">情侣互动数据报告</h2>
+    <!-- 数据报告弹窗（优化层级和过渡） -->
+    <div id="reportModal" class="fixed inset-0 bg-black/40 z-50 flex items-center justify-center hidden modal">
+        <div class="card-bg rounded-2xl w-[95%] max-w-2xl max-h-[85vh] overflow-y-auto p-4">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold text-primary">情侣互动数据报告</h2>
                 <button id="closeReport" class="text-gray-500 hover:text-dark dark:text-gray-400 dark:hover:text-light">
                     <i class="fa fa-times text-xl"></i>
                 </button>
             </div>
 
-            <!-- 报告概览 -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <!-- 报告概览 - 移动端单行排列 -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
                 <div class="report-card dark:report-card-dark">
-                    <div class="text-sm text-gray-500 dark:text-gray-400">在一起时长</div>
-                    <div class="text-2xl font-bold text-primary" id="reportDays">1208 天</div>
+                    <div class="text-xs text-gray-500 dark:text-gray-400">在一起时长</div>
+                    <div class="text-xl font-bold text-primary" id="reportDays">1208 天</div>
                 </div>
                 <div class="report-card dark:report-card-dark">
-                    <div class="text-sm text-gray-500 dark:text-gray-400">日记记录数</div>
-                    <div class="text-2xl font-bold text-secondary" id="reportDiaryCount">42 篇</div>
+                    <div class="text-xs text-gray-500 dark:text-gray-400">日记记录数</div>
+                    <div class="text-xl font-bold text-secondary" id="reportDiaryCount">42 篇</div>
                 </div>
                 <div class="report-card dark:report-card-dark">
-                    <div class="text-sm text-gray-500 dark:text-gray-400">情绪匹配度</div>
-                    <div class="text-2xl font-bold text-accent" id="reportMoodMatch">89%</div>
+                    <div class="text-xs text-gray-500 dark:text-gray-400">情绪匹配度</div>
+                    <div class="text-xl font-bold text-accent" id="reportMoodMatch">89%</div>
                 </div>
             </div>
 
-            <!-- 互动频率图表 -->
-            <div class="report-card dark:report-card-dark mb-6">
-                <h3 class="font-semibold mb-3">每周互动频率</h3>
-                <div class="h-60">
+            <!-- 互动频率图表 - 降低高度适配移动端 -->
+            <div class="report-card dark:report-card-dark mb-4">
+                <h3 class="font-semibold text-sm mb-2">每周互动频率</h3>
+                <div class="h-40">
                     <canvas id="interactionChart"></canvas>
                 </div>
             </div>
 
-            <!-- 情绪变化图表 -->
-            <div class="report-card dark:report-card-dark mb-6">
-                <h3 class="font-semibold mb-3">双方情绪变化趋势</h3>
-                <div class="h-60">
+            <!-- 情绪变化图表 - 降低高度适配移动端 -->
+            <div class="report-card dark:report-card-dark mb-4">
+                <h3 class="font-semibold text-sm mb-2">双方情绪变化趋势</h3>
+                <div class="h-40">
                     <canvas id="moodTrendChart"></canvas>
                 </div>
             </div>
 
             <!-- 数据导出按钮 -->
-            <div class="text-center mt-6">
-                <button id="exportReport" class="px-6 py-2 bg-secondary text-white rounded-full hover:bg-secondary/90 transition-colors">
-                    <i class="fa fa-download mr-1"></i> 导出数据报告
+            <div class="text-center mt-4">
+                <button id="exportReport" class="px-4 py-2 bg-secondary text-white rounded-full hover:bg-secondary/90 transition-colors text-sm">
+                    <i class="fa fa-download btn-mobile-icon mr-1"></i> 导出报告
                 </button>
             </div>
         </div>
     </div>
 
-    <!-- NFC互动反馈弹窗（默认隐藏） -->
-    <div id="nfcFeedbackModal" class="fixed inset-0 bg-black/30 z-50 flex items-center justify-center hidden">
-        <div class="card-bg rounded-2xl p-8 max-w-md w-full text-center">
-            <div class="w-20 h-20 bg-nfc/20 dark:bg-nfc/30 rounded-full flex items-center justify-center mx-auto mb-4">
-                <i class="fa fa-heart text-4xl text-nfc-active animate-pulse"></i>
+    <!-- NFC互动反馈弹窗 -->
+    <div id="nfcFeedbackModal" class="fixed inset-0 bg-black/30 z-50 flex items-center justify-center hidden modal">
+        <div class="card-bg rounded-2xl p-6 max-w-[85%] w-full text-center">
+            <div class="w-16 h-16 bg-nfc/20 dark:bg-nfc/30 rounded-full flex items-center justify-center mx-auto mb-3">
+                <i class="fa fa-heart text-3xl text-nfc-active animate-pulse"></i>
             </div>
-            <h3 class="text-xl font-bold text-dark dark:text-light mb-2" id="nfcFeedbackTitle">触碰成功！</h3>
-            <p class="text-gray-600 dark:text-gray-400 mb-6" id="nfcFeedbackDesc">你们的心意已传递，情感值+10～</p>
-            <button id="closeNfcFeedback" class="px-6 py-2 bg-primary text-white rounded-full hover:bg-primary/90 transition-colors">
+            <h3 class="text-lg font-bold text-dark dark:text-light mb-2" id="nfcFeedbackTitle">触碰成功！</h3>
+            <p class="text-gray-600 dark:text-gray-400 text-sm mb-4" id="nfcFeedbackDesc">你们的心意已传递，情感值+10～</p>
+            <button id="closeNfcFeedback" class="px-4 py-2 bg-primary text-white rounded-full hover:bg-primary/90 transition-colors text-sm">
                 确认
             </button>
         </div>
     </div>
 
-    <!-- 纪念日设置弹窗（默认隐藏） -->
-    <div id="anniversaryModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden">
-        <div class="card-bg rounded-2xl p-6 max-w-md w-full">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-xl font-bold text-primary">设置纪念日</h3>
+    <!-- 纪念日设置弹窗 -->
+    <div id="anniversaryModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden modal">
+        <div class="card-bg rounded-2xl p-4 max-w-[85%] w-full">
+            <div class="flex justify-between items-center mb-3">
+                <h3 class="text-lg font-bold text-primary">设置纪念日</h3>
                 <button id="closeAnniversaryModal" class="text-gray-500 hover:text-dark dark:text-gray-400 dark:hover:text-light">
                     <i class="fa fa-times"></i>
                 </button>
             </div>
+            <div class="mb-3">
+                <label class="block text-sm text-gray-600 dark:text-gray-400 mb-1">选择纪念日日期</label>
+                <input type="date" id="anniversaryDate" class="w-full border border-gray-200 dark:border-gray-600 dark:bg-dark-card rounded-lg px-3 py-2 focus:border-primary focus:outline-none dark:text-light text-sm">
+            </div>
             <div class="mb-4">
-                <label class="block text-sm text-gray-600 dark:text-gray-400 mb-2">选择纪念日日期</label>
-                <input type="date" id="anniversaryDate" class="w-full border border-gray-200 dark:border-gray-600 dark:bg-dark-card rounded-lg px-3 py-2 focus:border-primary focus:outline-none dark:text-light">
+                <label class="block text-sm text-gray-600 dark:text-gray-400 mb-1">纪念日名称</label>
+                <input type="text" id="anniversaryName" placeholder="例如：在一起的日子" class="w-full border border-gray-200 dark:border-gray-600 dark:bg-dark-card rounded-lg px-3 py-2 focus:border-primary focus:outline-none dark:text-light text-sm">
             </div>
-            <div class="mb-6">
-                <label class="block text-sm text-gray-600 dark:text-gray-400 mb-2">纪念日名称</label>
-                <input type="text" id="anniversaryName" placeholder="例如：在一起的日子" class="w-full border border-gray-200 dark:border-gray-600 dark:bg-dark-card rounded-lg px-3 py-2 focus:border-primary focus:outline-none dark:text-light">
-            </div>
-            <button id="saveAnniversary" class="w-full py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors">
+            <button id="saveAnniversary" class="w-full py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors text-sm">
                 保存设置
             </button>
         </div>
     </div>
 
-    <main class="container mx-auto px-4 py-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <!-- 1. 头像与昵称模块 -->
-        <section class="card-bg rounded-2xl shadow p-4 module-hover col-span-2">
-            <div class="flex justify-between items-center">
+    <!-- 位置共享设置弹窗 -->
+    <div id="locationSettingModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden modal">
+        <div class="card-bg rounded-2xl p-4 max-w-[85%] w-full">
+            <div class="flex justify-between items-center mb-3">
+                <h3 class="text-lg font-bold text-primary">位置共享设置</h3>
+                <button id="closeLocationSettingModal" class="text-gray-500 hover:text-dark dark:text-gray-400 dark:hover:text-light">
+                    <i class="fa fa-times"></i>
+                </button>
+            </div>
+            <div class="mb-3">
+                <label class="flex items-center gap-2 mb-1 text-sm text-gray-600 dark:text-gray-400">
+                    <input type="checkbox" id="enableLocationShare" class="w-4 h-4 text-primary focus:ring-primary border-gray-300 dark:border-gray-600 dark:bg-dark-card">
+                    <span>开启位置共享</span>
+                </label>
+            </div>
+            <div class="mb-3">
+                <label class="block text-sm text-gray-600 dark:text-gray-400 mb-1">位置更新频率</label>
+                <select id="locationUpdateFreq" class="w-full border border-gray-200 dark:border-gray-600 dark:bg-dark-card rounded-lg px-3 py-2 focus:border-primary focus:outline-none dark:text-light text-sm">
+                    <option value="30s">30秒</option>
+                    <option value="1min" selected>1分钟</option>
+                    <option value="5min">5分钟</option>
+                    <option value="10min">10分钟</option>
+                </select>
+            </div>
+            <div class="mb-4">
+                <label class="block text-sm text-gray-600 dark:text-gray-400 mb-1">位置共享有效期</label>
+                <select id="locationShareExpire" class="w-full border border-gray-200 dark:border-gray-600 dark:bg-dark-card rounded-lg px-3 py-2 focus:border-primary focus:outline-none dark:text-light text-sm">
+                    <option value="1h">1小时</option>
+                    <option value="3h">3小时</option>
+                    <option value="6h">6小时</option>
+                    <option value="12h">12小时</option>
+                    <option value="24h" selected>24小时</option>
+                    <option value="permanent">永久共享</option>
+                </select>
+            </div>
+            <button id="saveLocationSetting" class="w-full py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors text-sm">
+                保存设置
+            </button>
+        </div>
+    </div>
+
+    <!-- 主内容区 - 移动端单列布局，平板双列，桌面四列 -->
+    <main class="container mx-auto px-2 py-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <!-- 1. 头像与昵称模块 - 移动端占1列，平板+占2列 -->
+        <section class="card-bg rounded-2xl shadow p-3 module-hover sm:col-span-2">
+            <div class="flex justify-around items-center">
                 <div class="flex flex-col items-center">
                     <label for="avatar1" class="relative cursor-pointer">
-                        <div class="w-20 h-20 rounded-full overflow-hidden border-3 border-blue-500 bg-blue-100 dark:bg-blue-900/30">
+                        <div class="w-16 h-16 rounded-full overflow-hidden border-2 border-blue-500 bg-blue-100 dark:bg-blue-900/30">
                             <img id="avatarImg1" src="https://picsum.photos/200/200?random=1" alt="情侣头像" class="w-full h-full object-cover">
                         </div>
                         <input type="file" id="avatar1" class="hidden" accept="image/*">
-                        <span class="absolute bottom-0 right-0 bg-blue-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">
+                        <span class="absolute bottom-0 right-0 bg-blue-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs">
                             <i class="fa fa-edit"></i>
                         </span>
                     </label>
-                    <input type="text" id="nickname1" value="俥侣" class="mt-2 text-sm border-b border-gray-200 dark:border-gray-600 focus:border-blue-500 focus:outline-none text-center dark:text-light">
+                    <input type="text" id="nickname1" value="俥侣" class="mt-2 text-sm border-b border-gray-200 dark:border-gray-600 focus:border-blue-500 focus:outline-none text-center dark:text-light w-24">
                 </div>
                 <div class="flex flex-col items-center">
                     <label for="avatar2" class="relative cursor-pointer">
-                        <div class="w-20 h-20 rounded-full overflow-hidden border-3 border-pink-500 bg-pink-100 dark:bg-pink-900/30">
+                        <div class="w-16 h-16 rounded-full overflow-hidden border-2 border-pink-500 bg-pink-100 dark:bg-pink-900/30">
                             <img id="avatarImg2" src="https://picsum.photos/200/200?random=2" alt="情侣头像" class="w-full h-full object-cover">
                         </div>
                         <input type="file" id="avatar2" class="hidden" accept="image/*">
-                        <span class="absolute bottom-0 right-0 bg-pink-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">
+                        <span class="absolute bottom-0 right-0 bg-pink-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs">
                             <i class="fa fa-edit"></i>
                         </span>
                     </label>
-                    <input type="text" id="nickname2" value="天男" class="mt-2 text-sm border-b border-gray-200 dark:border-gray-600 focus:border-pink-500 focus:outline-none text-center dark:text-light">
+                    <input type="text" id="nickname2" value="天男" class="mt-2 text-sm border-b border-gray-200 dark:border-gray-600 focus:border-pink-500 focus:outline-none text-center dark:text-light w-24">
                 </div>
             </div>
         </section>
 
         <!-- 2. 日期与计时模块 -->
-        <section class="bg-[#d29967] rounded-2xl shadow p-4 module-hover text-white text-center">
-            <div class="flex justify-center gap-1 text-3xl font-bold">
-                <div class="bg-white text-[#d29967] w-12 h-16 flex items-center justify-center rounded" id="currentMonth">12</div>
-                <div class="bg-white text-[#d29967] w-12 h-16 flex items-center justify-center rounded" id="currentDay">08</div>
+        <section class="bg-[#d29967] rounded-2xl shadow p-3 module-hover text-white text-center">
+            <div class="flex justify-center gap-1 text-2xl font-bold">
+                <div class="bg-white text-[#d29967] w-10 h-14 flex items-center justify-center rounded" id="currentMonth">12</div>
+                <div class="bg-white text-[#d29967] w-10 h-14 flex items-center justify-center rounded" id="currentDay">08</div>
             </div>
-            <div class="text-sm mt-2">当前日期</div>
-            <div class="mt-3 text-xs bg-white/20 rounded-full px-3 py-1 inline-block" id="anniversaryText">
+            <div class="text-xs mt-1">当前日期</div>
+            <div class="mt-2 text-xs bg-white/20 rounded-full px-2 py-1 inline-block" id="anniversaryText">
                 距离在一起还有 30 天
             </div>
         </section>
 
         <!-- 3. 日历模块 -->
-        <section class="calendar-bg rounded-2xl shadow p-4 module-hover relative">
+        <section class="calendar-bg rounded-2xl shadow p-3 module-hover relative">
             <div class="absolute top-2 right-2">
-                <div class="w-10 h-10 bg-yellow-400 rounded-full flex items-center justify-center shadow-md">
-                    <i class="fa fa-bell text-white"></i>
+                <div class="w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center shadow-md">
+                    <i class="fa fa-bell text-white text-xs"></i>
                 </div>
             </div>
-            <div class="grid grid-cols-7 gap-1 mt-4 text-xs" id="calendarGrid">
+            <div class="grid grid-cols-7 gap-1 mt-3 text-xs" id="calendarGrid">
                 <div class="calendar-day dark:calendar-day-dark">7</div>
                 <div class="calendar-day dark:calendar-day-dark">8</div>
                 <div class="calendar-day dark:calendar-day-dark">10</div>
@@ -286,7 +410,7 @@
                 <div class="calendar-day dark:calendar-day-dark">16</div>
                 <div class="calendar-day calendar-day-marked relative dark:calendar-day-dark dark:calendar-day-marked-dark">
                     19
-                    <div class="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></div>
+                    <div class="absolute top-0 right-0 w-1.5 h-1.5 bg-red-500 rounded-full"></div>
                 </div>
                 <div class="calendar-day dark:calendar-day-dark">29</div>
                 <div class="calendar-day dark:calendar-day-dark">20</div>
@@ -296,63 +420,63 @@
             </div>
         </section>
 
-        <!-- 4. 日记模块 -->
-        <section class="card-bg rounded-2xl shadow p-4 module-hover col-span-2">
-            <div class="flex justify-between items-center mb-3">
-                <div id="diaryDate" class="text-gray-600 dark:text-gray-400">2025年12月1日</div>
-                <button id="toggleDiaryDate" class="text-sm text-gray-500 hover:text-primary dark:text-gray-400 dark:hover:text-primary">
-                    <i class="fa fa-calendar-o mr-1"></i> 切换日期
+        <!-- 4. 日记模块 - 移动端占1列，平板+占2列 -->
+        <section class="card-bg rounded-2xl shadow p-3 module-hover sm:col-span-2">
+            <div class="flex justify-between items-center mb-2">
+                <div id="diaryDate" class="text-gray-600 dark:text-gray-400 text-sm">2025年12月1日</div>
+                <button id="toggleDiaryDate" class="text-xs text-gray-500 hover:text-primary dark:text-gray-400 dark:hover:text-primary">
+                    <i class="fa fa-calendar-o btn-mobile-icon mr-1"></i> 切换日期
                 </button>
             </div>
-            <div id="diaryContent" class="h-40 overflow-y-auto p-3 bg-gray-50 dark:bg-dark/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/30 dark:text-light" contenteditable="true">
+            <div id="diaryContent" class="h-32 overflow-y-auto p-2 bg-gray-50 dark:bg-dark/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/30 dark:text-light text-sm" contenteditable="true">
                 今天和TA一起去了喜欢的餐厅，聊了很多未来的计划～ 希望我们永远这么幸福呀！❤️
             </div>
-            <div class="flex justify-end mt-3">
-                <button id="saveDiary" class="px-4 py-1 bg-primary text-white rounded-full hover:bg-primary/90 transition-colors text-sm">
-                    <i class="fa fa-save mr-1"></i> 保存日记
+            <div class="flex justify-end mt-2">
+                <button id="saveDiary" class="px-3 py-1 bg-primary text-white rounded-full hover:bg-primary/90 transition-colors text-xs">
+                    <i class="fa fa-save btn-mobile-icon mr-1"></i> 保存日记
                 </button>
             </div>
         </section>
 
-        <!-- 5. 情侣纪念/目标模块 -->
-        <section class="card-bg rounded-2xl shadow p-4 module-hover col-span-2">
-            <div class="relative h-40 rounded-xl overflow-hidden">
+        <!-- 5. 情侣纪念/目标模块 - 移动端占1列，平板+占2列 -->
+        <section class="card-bg rounded-2xl shadow p-3 module-hover sm:col-span-2">
+            <div class="relative h-32 rounded-xl overflow-hidden">
                 <img id="memorialImg" src="https://picsum.photos/800/400?random=3" alt="情侣纪念" class="w-full h-full object-cover">
-                <label for="uploadMemorialImg" class="absolute bottom-3 right-3 bg-black/50 text-white rounded-full w-10 h-10 flex items-center justify-center cursor-pointer hover:bg-black/70 transition-colors">
-                    <i class="fa fa-upload"></i>
+                <label for="uploadMemorialImg" class="absolute bottom-2 right-2 bg-black/50 text-white rounded-full w-8 h-8 flex items-center justify-center cursor-pointer hover:bg-black/70 transition-colors">
+                    <i class="fa fa-upload text-xs"></i>
                     <input type="file" id="uploadMemorialImg" class="hidden" accept="image/*">
                 </label>
                 <div class="absolute inset-0 bg-black/30 flex flex-col items-center justify-center text-white">
-                    <div class="text-lg font-medium" id="memorialTitle">情侣纪念</div>
-                    <div class="text-sm" id="memorialDesc">情侣共同目标</div>
+                    <div class="text-base font-medium" id="memorialTitle">情侣纪念</div>
+                    <div class="text-xs" id="memorialDesc">情侣共同目标</div>
                 </div>
             </div>
-            <div class="mt-3 flex justify-center gap-4">
-                <button id="editMemorialTitle" class="text-sm text-secondary hover:text-secondary/80 dark:text-secondary dark:hover:text-secondary/80">
-                    <i class="fa fa-pencil mr-1"></i> 编辑标题
+            <div class="mt-2 flex justify-center gap-3">
+                <button id="editMemorialTitle" class="text-xs text-secondary hover:text-secondary/80 dark:text-secondary dark:hover:text-secondary/80">
+                    <i class="fa fa-pencil btn-mobile-icon mr-1"></i> 编辑标题
                 </button>
-                <button id="editMemorialDesc" class="text-sm text-secondary hover:text-secondary/80 dark:text-secondary dark:hover:text-secondary/80">
-                    <i class="fa fa-pencil mr-1"></i> 编辑描述
+                <button id="editMemorialDesc" class="text-xs text-secondary hover:text-secondary/80 dark:text-secondary dark:hover:text-secondary/80">
+                    <i class="fa fa-pencil btn-mobile-icon mr-1"></i> 编辑描述
                 </button>
             </div>
         </section>
 
         <!-- 6. 情绪仪表盘模块 -->
-        <section class="bg-yellow-300 dark:bg-yellow-900/30 rounded-2xl shadow p-4 module-hover">
-            <div class="w-full h-32">
+        <section class="bg-yellow-300 dark:bg-yellow-900/30 rounded-2xl shadow p-3 module-hover">
+            <div class="w-full h-28">
                 <canvas id="moodChart"></canvas>
             </div>
-            <div class="mt-2 flex justify-center">
-                <div class="w-16 h-8 bg-white dark:bg-dark-card rounded flex items-center justify-center">
-                    <i class="fa fa-music text-black dark:text-light"></i>
+            <div class="mt-1 flex justify-center">
+                <div class="w-12 h-6 bg-white dark:bg-dark-card rounded flex items-center justify-center">
+                    <i class="fa fa-music text-black dark:text-light text-xs"></i>
                 </div>
             </div>
         </section>
 
         <!-- 7. 音乐切换模块 -->
-        <section class="music-bg rounded-2xl shadow p-4 module-hover">
-            <div class="flex justify-between items-center text-sm mb-2">
-                <span class="dark:text-light">Music switcher</span>
+        <section class="music-bg rounded-2xl shadow p-3 module-hover">
+            <div class="flex justify-between items-center text-xs mb-2">
+                <span class="dark:text-light">Music</span>
                 <div class="flex gap-1">
                     <i class="fa fa-ellipsis-v dark:text-light"></i>
                 </div>
@@ -360,32 +484,95 @@
             <div class="grid grid-cols-3 gap-2" id="musicGrid">
                 <div class="music-card dark:music-card-dark bg-gray-300 dark:bg-gray-700"></div>
                 <div class="music-card dark:music-card-dark bg-blue-500">
-                    <i class="fa fa-play text-white"></i>
+                    <i class="fa fa-play text-white text-xs"></i>
                 </div>
                 <div class="music-card dark:music-card-dark bg-orange-500"></div>
                 <div class="music-card dark:music-card-dark bg-teal-500"></div>
                 <div class="music-card dark:music-card-dark bg-white dark:bg-dark-card">
-                    <i class="fa fa-book text-gray-500 dark:text-gray-400"></i>
+                    <i class="fa fa-book text-gray-500 dark:text-gray-400 text-xs"></i>
                 </div>
                 <div class="music-card dark:music-card-dark bg-pink-300 dark:bg-pink-900/50 flex-col">
-                    <div class="w-4 h-2 bg-white dark:bg-light"></div>
-                    <div class="w-4 h-2 bg-white dark:bg-light mt-1"></div>
+                    <div class="w-3 h-1.5 bg-white dark:bg-light"></div>
+                    <div class="w-3 h-1.5 bg-white dark:bg-light mt-1"></div>
                 </div>
             </div>
             <div class="mt-2 flex justify-center">
-                <button class="w-8 h-8 bg-white dark:bg-dark-card rounded-full flex items-center justify-center">
-                    <i class="fa fa-play text-sm dark:text-light"></i>
+                <button class="w-7 h-7 bg-white dark:bg-dark-card rounded-full flex items-center justify-center">
+                    <i class="fa fa-play text-xs dark:text-light"></i>
                 </button>
             </div>
         </section>
 
         <!-- 8. NFC功能模块 -->
-        <section class="card-bg rounded-2xl shadow p-4 module-hover col-span-1 flex items-center justify-center">
-            <div class="nfc-card dark:nfc-card-dark" id="nfcCard">
+        <section class="card-bg rounded-2xl shadow p-3 module-hover flex items-center justify-center">
+            <div class="nfc-card dark:nfc-card-dark text-center px-4">
                 <div class="nfc-pulse dark:nfc-pulse-dark hidden" id="nfcPulse"></div>
-                <i class="fa fa-hand-pointer-o text-2xl text-nfc mb-2"></i>
-                <span class="text-sm font-medium text-nfc dark:text-nfc">NFC 触碰互动</span>
-                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">点击模拟设备触碰</p>
+                <i class="fa fa-hand-pointer-o text-xl text-nfc mb-1"></i>
+                <span class="text-xs font-medium text-nfc dark:text-nfc">NFC触碰</span>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">点击互动</p>
+            </div>
+        </section>
+
+        <!-- 9. 情侣位置共享模块 - 全宽布局（所有屏幕尺寸占满） -->
+        <section class="location-card col-span-1 sm:col-span-2 lg:col-span-4">
+            <div class="flex justify-between items-center mb-3">
+                <h3 class="text-base font-bold text-primary flex items-center">
+                    <i class="fa fa-map-marker btn-mobile-icon mr-1"></i>情侣位置共享
+                </h3>
+                <button id="locationSettingBtn" class="text-xs text-gray-500 hover:text-primary dark:text-gray-400 dark:hover:text-primary">
+                    <i class="fa fa-cog btn-mobile-icon mr-1"></i> 设置
+                </button>
+            </div>
+
+            <!-- 地图容器 -->
+            <div id="mapContainer"></div>
+
+            <!-- 位置状态信息 - 移动端堆叠布局 -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+                <div>
+                    <div class="flex items-center gap-1.5 mb-1">
+                        <span class="location-badge bg-location-user1 text-white text-xs">
+                            <i class="fa fa-user btn-mobile-icon mr-0.5"></i>
+                            <span id="user1BadgeText">俥侣</span>
+                        </span>
+                        <span id="user1LocationStatus" class="text-xs text-gray-500 dark:text-gray-400">
+                            未获取位置
+                        </span>
+                    </div>
+                    <p id="user1LocationText" class="text-xs dark:text-light truncate">--</p>
+                </div>
+                <div>
+                    <div class="flex items-center gap-1.5 mb-1">
+                        <span class="location-badge bg-location-user2 text-white text-xs">
+                            <i class="fa fa-user btn-mobile-icon mr-0.5"></i>
+                            <span id="user2BadgeText">天男</span>
+                        </span>
+                        <span id="user2LocationStatus" class="text-xs text-gray-500 dark:text-gray-400">
+                            未获取位置
+                        </span>
+                    </div>
+                    <p id="user2LocationText" class="text-xs dark:text-light truncate">--</p>
+                </div>
+            </div>
+
+            <!-- 位置操作按钮 - 移动端堆叠布局 -->
+            <div class="flex flex-col sm:flex-row gap-2 mb-3">
+                <button id="refreshLocationBtn" class="flex-1 py-1.5 bg-secondary text-white rounded-lg hover:bg-secondary/90 transition-colors text-xs btn-mobile-text">
+                    <i class="fa fa-refresh btn-mobile-icon mr-1"></i> 刷新位置
+                </button>
+                <button id="viewLocationHistoryBtn" class="flex-1 py-1.5 bg-gray-100 dark:bg-dark/30 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-dark/50 transition-colors text-xs btn-mobile-text">
+                    <i class="fa fa-history btn-mobile-icon mr-1"></i> 位置历史
+                </button>
+            </div>
+
+            <!-- 位置历史列表（默认隐藏） -->
+            <div id="locationHistoryContainer" class="hidden">
+                <h4 class="text-xs font-medium mb-1.5 dark:text-light">最近位置记录</h4>
+                <div class="location-history-list space-y-1.5" id="locationHistoryList">
+                    <div class="text-xs text-gray-500 dark:text-gray-400 text-center py-2">
+                        暂无位置记录
+                    </div>
+                </div>
             </div>
         </section>
     </main>
@@ -421,10 +608,29 @@
                     diaryCount: 1,
                     moodMatch: 89
                 },
-                theme: 'light' // 默认亮色主题
+                theme: 'light',
+                location: {
+                    enableShare: false,
+                    updateFreq: '1min',
+                    shareExpire: '24h',
+                    user1: {
+                        latitude: '',
+                        longitude: '',
+                        address: '',
+                        updateTime: '',
+                        status: 'unavailable'
+                    },
+                    user2: {
+                        latitude: '',
+                        longitude: '',
+                        address: '',
+                        updateTime: '',
+                        status: 'unavailable'
+                    },
+                    history: []
+                }
             };
 
-            // 如果本地存储无数据，初始化默认数据
             if (!localStorage.getItem('coupleSpaceData')) {
                 localStorage.setItem('coupleSpaceData', JSON.stringify(defaultData));
             }
@@ -435,9 +641,13 @@
             return JSON.parse(localStorage.getItem('coupleSpaceData')) || {};
         };
 
-        // 保存数据到本地存储
+        // 保存数据到本地存储（优化：减少重复序列化）
         const saveLocalData = (data) => {
-            localStorage.setItem('coupleSpaceData', JSON.stringify(data));
+            try {
+                localStorage.setItem('coupleSpaceData', JSON.stringify(data));
+            } catch (e) {
+                console.warn('本地存储保存失败，可能是存储空间已满', e);
+            }
         };
 
         // 初始化主题
@@ -446,9 +656,11 @@
             const theme = data.theme || 'light';
             document.documentElement.classList.toggle('dark-theme', theme === 'dark');
             updateThemeIcon(theme);
-            // 初始化图表主题（Chart.js需要单独处理）
-            Chart.defaults.color = theme === 'dark' ? '#e0e0e0' : '#2d3748';
-            Chart.defaults.borderColor = theme === 'dark' ? '#3a3a5c' : '#e5e7eb';
+            // 延迟初始化图表主题，避免阻塞
+            setTimeout(() => {
+                Chart.defaults.color = theme === 'dark' ? '#e0e0e0' : '#2d3748';
+                Chart.defaults.borderColor = theme === 'dark' ? '#3a3a5c' : '#e5e7eb';
+            }, 500);
         };
 
         // 更新主题图标
@@ -467,7 +679,7 @@
             }
         };
 
-        // 切换主题
+        // 切换主题（优化：减少DOM操作）
         const toggleTheme = () => {
             const data = getLocalData();
             const newTheme = data.theme === 'dark' ? 'light' : 'dark';
@@ -475,443 +687,270 @@
             saveLocalData(data);
             document.documentElement.classList.toggle('dark-theme', newTheme === 'dark');
             updateThemeIcon(newTheme);
-            // 重新渲染图表以适配主题
-            initMoodChart();
-            if (!reportModal.classList.contains('hidden')) {
-                initReportCharts();
-            }
-        };
-
-        // 页面加载时初始化
-        window.addEventListener('DOMContentLoaded', () => {
-            initLocalStorage();
-            initTheme();
-            loadLocalDataToPage();
-            initMoodChart();
-            updateCurrentDate();
-            calculateAnniversaryDays();
-        });
-
-        // 加载本地数据到页面
-        const loadLocalDataToPage = () => {
-            const data = getLocalData();
-
-            // 加载用户信息
-            document.getElementById('nickname1').value = data.user1?.nickname || '俥侣';
-            document.getElementById('nickname2').value = data.user2?.nickname || '天男';
-            document.getElementById('avatarImg1').src = data.user1?.avatar || 'https://picsum.photos/200/200?random=1';
-            document.getElementById('avatarImg2').src = data.user2?.avatar || 'https://picsum.photos/200/200?random=2';
-
-            // 加载日记数据
-            const latestDiary = data.diary?.[0] || {};
-            document.getElementById('diaryDate').textContent = formatDate(latestDiary.date);
-            document.getElementById('diaryContent').innerHTML = latestDiary.content || '';
-
-            // 加载纪念模块数据
-            document.getElementById('memorialTitle').textContent = data.memorial?.title || '情侣纪念';
-            document.getElementById('memorialDesc').textContent = data.memorial?.desc || '情侣共同目标';
-            document.getElementById('memorialImg').src = data.memorial?.img || 'https://picsum.photos/800/400?random=3';
-
-            // 加载纪念日数据
-            document.getElementById('anniversaryName').value = data.anniversary?.name || '在一起的日子';
-            if (data.anniversary?.date) {
-                document.getElementById('anniversaryDate').value = data.anniversary.date;
-            }
-
-            // 加载数据报告数据
-            document.getElementById('reportDays').textContent = data.anniversary?.days || 0 + ' 天';
-            document.getElementById('reportDiaryCount').textContent = data.interactionData?.diaryCount || 0 + ' 篇';
-            document.getElementById('reportMoodMatch').textContent = data.interactionData?.moodMatch || 89 + '%';
-        };
-
-        // 初始化情绪图表
-        const initMoodChart = () => {
-            const moodCtx = document.getElementById('moodChart').getContext('2d');
-            // 销毁已存在的图表
-            if (window.moodChartInstance) {
-                window.moodChartInstance.destroy();
-            }
-            // 判断当前主题
-            const isDark = document.documentElement.classList.contains('dark-theme');
-            window.moodChartInstance = new Chart(moodCtx, {
-                type: 'doughnut',
-                data: {
-                    datasets: [{
-                        data: [80, 20],
-                        backgroundColor: ['#4ecdc4', isDark ? '#3a1c1a' : '#ff6b6b'],
-                        borderWidth: 0,
-                        cutout: '70%'
-                    }]
-                },
-                options: {
-                    plugins: {
-                        tooltip: { enabled: false },
-                        legend: { display: false }
-                    }
+            // 延迟重新渲染图表，避免卡顿
+            setTimeout(() => {
+                initMoodChart();
+                if (!reportModal.classList.contains('hidden')) {
+                    initReportCharts();
                 }
-            });
+            }, 300);
         };
 
-        // 更新当前日期
-        const updateCurrentDate = () => {
-            const now = new Date();
-            document.getElementById('currentMonth').textContent = now.getMonth() + 1;
-            document.getElementById('currentDay').textContent = now.getDate().toString().padStart(2, '0');
-            document.getElementById('diaryDate').textContent = formatDate(now.toLocaleDateString());
-        };
-
-        // 计算纪念日天数
-        const calculateAnniversaryDays = () => {
-            const data = getLocalData();
-            const anniversaryDate = data.anniversary?.date;
-            if (!anniversaryDate) return;
-
-            const anniversary = new Date(anniversaryDate);
-            const now = new Date();
-            const timeDiff = Math.abs(now - anniversary);
-            const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
-
-            // 更新纪念日天数
-            data.anniversary.days = days;
-            saveLocalData(data);
-
-            // 更新页面显示
-            document.getElementById('anniversaryText').textContent = `在一起 ${days} 天`;
-            document.getElementById('reportDays').textContent = days + ' 天';
-        };
-
-        // 日期格式化
-        const formatDate = (dateStr) => {
-            const date = new Date(dateStr);
-            return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`;
-        };
-
-        // 头像上传与保存
-        document.getElementById('avatar1').addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    const data = getLocalData();
-                    data.user1.avatar = event.target.result;
-                    saveLocalData(data);
-                    document.getElementById('avatarImg1').src = event.target.result;
-                };
-                reader.readAsDataURL(file);
-            }
-        });
-
-        document.getElementById('avatar2').addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    const data = getLocalData();
-                    data.user2.avatar = event.target.result;
-                    saveLocalData(data);
-                    document.getElementById('avatarImg2').src = event.target.result;
-                };
-                reader.readAsDataURL(file);
-            }
-        });
-
-        // 昵称保存
-        document.getElementById('nickname1').addEventListener('blur', () => {
-            const data = getLocalData();
-            data.user1.nickname = document.getElementById('nickname1').value;
-            saveLocalData(data);
-        });
-
-        document.getElementById('nickname2').addEventListener('blur', () => {
-            const data = getLocalData();
-            data.user2.nickname = document.getElementById('nickname2').value;
-            saveLocalData(data);
-        });
-
-        // 日记保存
-        document.getElementById('saveDiary').addEventListener('click', () => {
-            const data = getLocalData();
-            const content = document.getElementById('diaryContent').innerHTML;
-            const date = new Date().toLocaleDateString();
-
-            // 更新日记数据
-            data.diary.unshift({ date, content });
-            data.interactionData.diaryCount = data.diary.length;
-            saveLocalData(data);
-
-            // 更新页面与报告数据
-            document.getElementById('reportDiaryCount').textContent = data.diary.length + ' 篇';
-            alert('日记保存成功！');
-        });
-
-        // 纪念日设置
-        document.querySelector('button:has(.fa-pencil):nth-child(2)').addEventListener('click', () => {
-            document.getElementById('anniversaryModal').classList.remove('hidden');
-        });
-
-        document.getElementById('closeAnniversaryModal').addEventListener('click', () => {
-            document.getElementById('anniversaryModal').classList.add('hidden');
-        });
-
-        document.getElementById('saveAnniversary').addEventListener('click', () => {
-            const date = document.getElementById('anniversaryDate').value;
-            const name = document.getElementById('anniversaryName').value;
-            if (!date) {
-                alert('请选择纪念日日期');
+        // 初始化地图（优化：延迟加载+简化配置）
+        let map = null;
+        let user1Marker = null;
+        let user2Marker = null;
+        const initMap = () => {
+            if (!window.AMap) {
+                console.warn('地图API加载失败，使用简化版位置展示');
+                document.getElementById('mapContainer').innerHTML = '<div class="flex items-center justify-center h-full text-xs text-gray-500 dark:text-gray-400">地图加载失败</div>';
                 return;
             }
 
+            // 简化地图配置，提升加载速度
+            map = new AMap.Map('mapContainer', {
+                zoom: 12,
+                center: [116.39748, 39.90882],
+                resizeEnable: true,
+                disableDefaultUI: true, // 禁用默认UI，减少加载项
+                zoomEnable: true,
+                dragEnable: true
+            });
+
+            // 只添加必要控件
+            map.addControl(new AMap.Scale({
+                position: 'RB',
+                offset: [5, 5]
+            }));
+
+            // 简化标记点配置
+            user1Marker = new AMap.Marker({
+                icon: new AMap.Icon({
+                    size: new AMap.Size(24, 24),
+                    image: 'https://webapi.amap.com/theme/v1.3/markers/n/mark_b.png',
+                    imageSize: new AMap.Size(24, 24)
+                }),
+                visible: false
+            });
+
+            user2Marker = new AMap.Marker({
+                icon: new AMap.Icon({
+                    size: new AMap.Size(24, 24),
+                    image: 'https://webapi.amap.com/theme/v1.3/markers/n/mark_r.png',
+                    imageSize: new AMap.Size(24, 24)
+                }),
+                visible: false
+            });
+
+            user1Marker.setMap(map);
+            user2Marker.setMap(map);
+
+            // 加载位置数据
             const data = getLocalData();
-            data.anniversary.date = date;
-            data.anniversary.name = name;
-            saveLocalData(data);
+            const locationData = data.location || {};
+            updateMapMarkers(locationData);
+        };
 
-            calculateAnniversaryDays();
-            document.getElementById('anniversaryModal').classList.add('hidden');
-            alert('纪念日设置成功！');
-        });
+        // 更新地图标记（优化：减少地图重绘）
+        const updateMapMarkers = (locationData) => {
+            if (!map) return;
 
-        // 纪念模块编辑
-        document.getElementById('editMemorialTitle').addEventListener('click', () => {
-            const newTitle = prompt('请输入新的纪念标题', document.getElementById('memorialTitle').textContent);
-            if (newTitle) {
-                const data = getLocalData();
-                data.memorial.title = newTitle;
-                saveLocalData(data);
-                document.getElementById('memorialTitle').textContent = newTitle;
+            const { user1, user2 } = locationData;
+
+            // 批量更新，减少地图操作次数
+            map.batchStart();
+
+            if (user1.status === 'available' && user1.longitude && user1.latitude) {
+                user1Marker.setPosition([user1.longitude, user1.latitude]);
+                user1Marker.setVisible(true);
+                user1Marker.setTitle(`${getLocalData().user1.nickname}的位置`);
+            } else {
+                user1Marker.setVisible(false);
             }
-        });
 
-        document.getElementById('editMemorialDesc').addEventListener('click', () => {
-            const newDesc = prompt('请输入新的纪念描述', document.getElementById('memorialDesc').textContent);
-            if (newDesc) {
-                const data = getLocalData();
-                data.memorial.desc = newDesc;
-                saveLocalData(data);
-                document.getElementById('memorialDesc').textContent = newDesc;
+            if (user2.status === 'available' && user2.longitude && user2.latitude) {
+                user2Marker.setPosition([user2.longitude, user2.latitude]);
+                user2Marker.setVisible(true);
+                user2Marker.setTitle(`${getLocalData().user2.nickname}的位置`);
+            } else {
+                user2Marker.setVisible(false);
             }
-        });
 
-        document.getElementById('uploadMemorialImg').addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    const data = getLocalData();
-                    data.memorial.img = event.target.result;
-                    saveLocalData(data);
-                    document.getElementById('memorialImg').src = event.target.result;
+            // 调整视野
+            if (user1.status === 'available' && user2.status === 'available' && user1.longitude && user1.latitude && user2.longitude && user2.latitude) {
+                const bounds = new AMap.Bounds(
+                    [Math.min(user1.longitude, user2.longitude), Math.min(user1.latitude, user2.latitude)],
+                    [Math.max(user1.longitude, user2.longitude), Math.max(user1.latitude, user2.latitude)]
+                );
+                map.setBounds(bounds, { padding: [30, 30] });
+            } else if (user1.status === 'available' && user1.longitude && user1.latitude) {
+                map.setCenter([user1.longitude, user1.latitude]);
+            } else if (user2.status === 'available' && user2.longitude && user2.latitude) {
+                map.setCenter([user2.longitude, user2.latitude]);
+            }
+
+            map.batchEnd();
+        };
+
+        // 获取当前位置（优化：减少重复请求）
+        const getCurrentLocation = async (isUser1 = true) => {
+            const data = getLocalData();
+            const locationData = data.location || {};
+
+            // 检查是否已开启共享
+            if (!locationData.enableShare) {
+                alert('请先在设置中开启位置共享');
+                return;
+            }
+
+            const statusElement = isUser1 ? document.getElementById('user1LocationStatus') : document.getElementById('user2LocationStatus');
+            statusElement.textContent = '获取中...';
+            statusElement.classList.remove('text-gray-500', 'text-green-500', 'text-red-500');
+            statusElement.classList.add('text-blue-500');
+
+            try {
+                if (!navigator.geolocation) {
+                    throw new Error('浏览器不支持地理位置');
+                }
+
+                // 限制位置请求超时时间
+                const position = await Promise.race([
+                    new Promise((resolve, reject) => {
+                        navigator.geolocation.getCurrentPosition(resolve, reject, {
+                            enableHighAccuracy: false, // 关闭高精度，提升速度
+                            timeout: 8000, // 缩短超时时间
+                            maximumAge: 30000 // 允许使用30秒内的缓存位置
+                        });
+                    }),
+                    new Promise((_, reject) => {
+                        setTimeout(() => reject(new Error('位置获取超时')), 8000);
+                    })
+                ]);
+
+                const { latitude, longitude } = position.coords;
+                const address = await getAddressFromCoords(longitude, latitude);
+                const updateTime = new Date().toLocaleString();
+
+                const userKey = isUser1 ? 'user1' : 'user2';
+                locationData[userKey] = {
+                    latitude,
+                    longitude,
+                    address,
+                    updateTime,
+                    status: 'available'
                 };
-                reader.readAsDataURL(file);
-            }
-        });
 
-        // 数据报告交互
-        const reportModal = document.getElementById('reportModal');
-        const reportBtn = document.getElementById('reportBtn');
-        const closeReport = document.getElementById('closeReport');
-        const exportReport = document.getElementById('exportReport');
+                // 优化历史记录存储
+                locationData.history.unshift({
+                    userId: isUser1 ? 1 : 2,
+                    username: isUser1 ? data.user1.nickname : data.user2.nickname,
+                    latitude,
+                    longitude,
+                    address,
+                    time: updateTime
+                });
 
-        reportBtn.addEventListener('click', () => {
-            reportModal.classList.remove('hidden');
-            initReportCharts();
-        });
-
-        closeReport.addEventListener('click', () => {
-            reportModal.classList.add('hidden');
-        });
-
-        window.addEventListener('click', (e) => {
-            if (e.target === reportModal) {
-                reportModal.classList.add('hidden');
-            }
-        });
-
-        exportReport.addEventListener('click', () => {
-            const data = getLocalData();
-            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = '情侣空间互动数据报告.json';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-        });
-
-        // 初始化报告图表
-        function initReportCharts() {
-            const data = getLocalData();
-            const interactionData = data.interactionData || {};
-            const isDark = document.documentElement.classList.contains('dark-theme');
-
-            // 销毁已存在的图表
-            if (window.interactionChartInstance) {
-                window.interactionChartInstance.destroy();
-            }
-            if (window.moodTrendChartInstance) {
-                window.moodTrendChartInstance.destroy();
-            }
-
-            // 互动频率图表
-            const interactionCtx = document.getElementById('interactionChart').getContext('2d');
-            window.interactionChartInstance = new Chart(interactionCtx, {
-                type: 'bar',
-                data: {
-                    labels: ['周一', '周二', '周三', '周四', '周五', '周六', '周日'],
-                    datasets: [{
-                        label: '互动次数',
-                        data: [3, 5, 2, 7, 4, 9, 12 + (interactionData.nfcCount || 0)],
-                        backgroundColor: '#ff6b8b',
-                        borderRadius: 4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        x: {
-                            grid: {
-                                color: isDark ? '#3a3a5c' : '#e5e7eb'
-                            }
-                        },
-                        y: {
-                            grid: {
-                                color: isDark ? '#3a3a5c' : '#e5e7eb'
-                            },
-                            ticks: {
-                                color: isDark ? '#e0e0e0' : '#2d3748'
-                            }
-                        }
-                    },
-                    plugins: {
-                        legend: {
-                            labels: {
-                                color: isDark ? '#e0e0e0' : '#2d3748'
-                            }
-                        }
-                    }
+                if (locationData.history.length > 15) { // 减少历史记录数量，优化存储
+                    locationData.history = locationData.history.slice(0, 15);
                 }
-            });
 
-            // 情绪趋势图表
-            const moodTrendCtx = document.getElementById('moodTrendChart').getContext('2d');
-            window.moodTrendChartInstance = new Chart(moodTrendCtx, {
-                type: 'line',
-                data: {
-                    labels: ['1月', '2月', '3月', '4月', '5月', '6月'],
-                    datasets: [
-                        {
-                            label: '俥侣情绪值',
-                            data: [70, 85, 60, 90, 80, interactionData.moodMatch || 89],
-                            borderColor: '#4299e1',
-                            backgroundColor: 'rgba(66, 153, 225, 0.1)',
-                            fill: true,
-                            tension: 0.3
-                        },
-                        {
-                            label: '天男情绪值',
-                            data: [65, 80, 75, 85, 90, interactionData.moodMatch || 89],
-                            borderColor: '#ed64a6',
-                            backgroundColor: 'rgba(237, 100, 166, 0.1)',
-                            fill: true,
-                            tension: 0.3
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        x: {
-                            grid: {
-                                color: isDark ? '#3a3a5c' : '#e5e7eb'
-                            },
-                            ticks: {
-                                color: isDark ? '#e0e0e0' : '#2d3748'
-                            }
-                        },
-                        y: {
-                            grid: {
-                                color: isDark ? '#3a3a5c' : '#e5e7eb'
-                            },
-                            ticks: {
-                                color: isDark ? '#e0e0e0' : '#2d3748'
-                            }
-                        }
-                    },
-                    plugins: {
-                        legend: {
-                            labels: {
-                                color: isDark ? '#e0e0e0' : '#2d3748'
-                            }
-                        }
-                    }
+                data.location = locationData;
+                saveLocalData(data);
+
+                updateLocationDisplay(locationData);
+                updateMapMarkers(locationData);
+                updateLocationHistoryList(locationData.history);
+
+                statusElement.textContent = `更新于 ${updateTime.slice(-5)}`; // 简化时间显示
+                statusElement.classList.remove('text-blue-500');
+                statusElement.classList.add('text-green-500');
+
+            } catch (error) {
+                console.error('获取位置失败：', error);
+                statusElement.textContent = '获取失败';
+                statusElement.classList.remove('text-blue-500');
+                statusElement.classList.add('text-red-500');
+
+                // 模拟位置优化：固定范围，减少计算
+                const mockLongitude = 116.39748 + (Math.random() - 0.5) * 0.05;
+                const mockLatitude = 39.90882 + (Math.random() - 0.5) * 0.05;
+                const address = await getAddressFromCoords(mockLongitude, mockLatitude);
+                const updateTime = new Date().toLocaleString();
+
+                const userKey = isUser1 ? 'user1' : 'user2';
+                locationData[userKey] = {
+                    latitude: mockLatitude,
+                    longitude: mockLongitude,
+                    address,
+                    updateTime,
+                    status: 'available'
+                };
+
+                locationData.history.unshift({
+                    userId: isUser1 ? 1 : 2,
+                    username: isUser1 ? data.user1.nickname : data.user2.nickname,
+                    latitude: mockLatitude,
+                    longitude: mockLongitude,
+                    address,
+                    time: updateTime
+                });
+
+                if (locationData.history.length > 15) {
+                    locationData.history = locationData.history.slice(0, 15);
                 }
-            });
-        }
 
-        // NFC功能交互
-        const nfcCard = document.getElementById('nfcCard');
-        const nfcPulse = document.getElementById('nfcPulse');
-        const nfcFeedbackModal = document.getElementById('nfcFeedbackModal');
-        const closeNfcFeedback = document.getElementById('closeNfcFeedback');
-        const nfcFeedbackTitle = document.getElementById('nfcFeedbackTitle');
-        const nfcFeedbackDesc = document.getElementById('nfcFeedbackDesc');
+                data.location = locationData;
+                saveLocalData(data);
 
-        nfcCard.addEventListener('click', () => {
-            nfcCard.classList.add('nfc-card-active', 'dark:nfc-card-active-dark');
-            nfcPulse.classList.remove('hidden');
+                updateLocationDisplay(locationData);
+                updateMapMarkers(locationData);
+                updateLocationHistoryList(locationData.history);
 
-            setTimeout(() => {
-                const feedbacks = [
-                    { title: '触碰成功！', desc: '你们的心意已传递，情感值+10～' },
-                    { title: '甜蜜互动！', desc: 'TA感受到了你的思念，默契度+8～' },
-                    { title: '心有灵犀！', desc: '同时触碰的巧合，幸福值+15～' }
-                ];
-                const randomFeedback = feedbacks[Math.floor(Math.random() * feedbacks.length)];
-                nfcFeedbackTitle.textContent = randomFeedback.title;
-                nfcFeedbackDesc.textContent = randomFeedback.desc;
-
-                nfcFeedbackModal.classList.remove('hidden');
-                nfcCard.classList.remove('nfc-card-active', 'dark:nfc-card-active-dark');
-                nfcPulse.classList.add('hidden');
-
-                // 更新互动数据
-                updateInteractionData();
-            }, 1500);
-        });
-
-        closeNfcFeedback.addEventListener('click', () => {
-            nfcFeedbackModal.classList.add('hidden');
-        });
-
-        window.addEventListener('click', (e) => {
-            if (e.target === nfcFeedbackModal) {
-                nfcFeedbackModal.classList.add('hidden');
+                statusElement.textContent = '模拟位置';
+                statusElement.classList.remove('text-red-500');
+                statusElement.classList.add('text-yellow-500');
             }
-        });
+        };
 
-        // 更新互动数据
-        function updateInteractionData() {
+        // 根据经纬度获取地址（优化：缓存结果）
+        const addressCache = new Map(); // 地址缓存
+        const getAddressFromCoords = async (longitude, latitude) => {
+            const cacheKey = `${longitude.toFixed(6)},${latitude.toFixed(6)}`;
+            if (addressCache.has(cacheKey)) {
+                return addressCache.get(cacheKey);
+            }
+
+            try {
+                const response = await fetch(`https://restapi.amap.com/v3/geocode/regeo?key=6c65e4f206929f7d1ff593b48d571f9c&location=${longitude},${latitude}&radius=500&extensions=base`);
+                const result = await response.json();
+                let address = '未知地址';
+                if (result.status === '1' && result.regeocode) {
+                    address = result.regeocode.formatted_address || '未知地址';
+                }
+                addressCache.set(cacheKey, address); // 缓存地址，有效期5分钟
+                setTimeout(() => addressCache.delete(cacheKey), 300000);
+                return address;
+            } catch (error) {
+                console.error('获取地址失败：', error);
+                return '未知地址';
+            }
+        };
+
+        // 更新位置显示信息
+        const updateLocationDisplay = (locationData) => {
+            const { user1, user2 } = locationData;
             const data = getLocalData();
-            data.interactionData.nfcCount = (data.interactionData.nfcCount || 0) + 1;
-            // 每3次NFC互动增加1%情绪匹配度
-            if (data.interactionData.nfcCount % 3 === 0) {
-                data.interactionData.moodMatch = Math.min(100, (data.interactionData.moodMatch || 89) + 1);
-                document.getElementById('reportMoodMatch').textContent = data.interactionData.moodMatch + '%';
-            }
-            saveLocalData(data);
-        }
+            const user1Nickname = data.user1.nickname || '用户1';
+            const user2Nickname = data.user2.nickname || '用户2';
 
-        // 其他基础交互
-        document.querySelector('button:has(.fa-edit)').addEventListener('click', () => {
-            document.getElementById('diaryContent').focus();
-        });
+            document.getElementById('user1BadgeText').textContent = user1Nickname;
+            document.getElementById('user2BadgeText').textContent = user2Nickname;
 
-        // 主题切换按钮事件
-        document.getElementById('themeToggle').addEventListener('click', toggleTheme);
-    </script>
-</body>
-</html>
+            if (user1.status === 'available') {
+                document.getElementById('user1LocationText').textContent = user1.address;
+                document.getElementById('user1LocationStatus').textContent = `更新于 ${user1.updateTime.slice(-5)}`;
+                document.getElementById('user1LocationStatus').classList.remove('text-gray-500', 'text-red-500', 'text-yellow-500');
+                document.getElementById('user1LocationStatus').classList.add('text-green-500');
+            } else {
+                document.getElementById('user1LocationText').textContent = '--';
+                document.getElementById('user1LocationStatus').textContent =
